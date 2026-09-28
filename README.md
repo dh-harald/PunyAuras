@@ -1,3 +1,4 @@
+![GitHub Release](https://img.shields.io/github/v/release/dh-harald/PunyAuras) ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dh-harald/PunyAuras/package.yaml) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/dh-harald/PunyAuras/total)
 # PunyAuras
 
 A heavily trimmed-down WeakAuras for the World of Warcraft 1.12.1 client and
