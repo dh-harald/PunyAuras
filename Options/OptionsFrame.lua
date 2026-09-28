@@ -169,6 +169,26 @@ local function AddPart(widget, content, condition)
 	return widget
 end
 
+-- Unreal Azeroth only re-sorts its draw order when a frame is created or
+-- reparented. A frame that gets its level, or is shown, after the last such
+-- event is drawn at a stale position -- the list rows beneath the window's
+-- own translucent background, so they look faded. Reparenting an empty
+-- frame, even to the parent it already has, forces the re-sort. It has to
+-- run on the next frame: a re-sort in the same frame as the level changes
+-- still sees the old order. Harmless on the 1.12.1 client.
+local drawOrderFrame, drawOrderTimer
+local function ResortOnNextFrame()
+	drawOrderTimer:SetScript("OnUpdate", nil)
+	pcall(drawOrderFrame.SetParent, drawOrderFrame, UIParent)
+end
+local function ResortDrawOrder()
+	if not drawOrderFrame then
+		drawOrderFrame = CreateFrame("Frame", nil, UIParent)
+		drawOrderTimer = CreateFrame("Frame", nil, UIParent)
+	end
+	drawOrderTimer:SetScript("OnUpdate", ResortOnNextFrame)
+end
+
 local function UpdatePartsShown()
 	local shown = frame:IsShown()
 	local i
@@ -193,6 +213,8 @@ local function UpdatePartsShown()
 	-- minimized included, so it can be looked at without the window in the
 	-- way.
 	PA:SetPreview(frame:IsShown() and frame.pickedDisplay or nil)
+	-- Last: every view change ends here, after its frames got their levels.
+	ResortDrawOrder()
 end
 
 -- The screen edge or corner the window is closest to, with a small offset
