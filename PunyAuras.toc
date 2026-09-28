@@ -1,0 +1,13 @@
+## Interface: 11200
+## Title: PunyAuras
+## Author: Criminal
+## Notes: WeakAuras alternative for 1.12.1
+## Version: @project-version@
+## SavedVariables: PunyAurasDB
+
+Libs\Load_Libs.xml
+Locales\Load_Locales.xml
+Init.lua
+Core\Load_Core.xml
+Regions\Load_Regions.xml
+Options\Load_Options.xml

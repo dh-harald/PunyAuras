@@ -1,0 +1,12 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Compat.lua"/>
+	<Script file="Auras.lua"/>
+	<Script file="IconCache.lua"/>
+	<Script file="Load.lua"/>
+	<Script file="Triggers.lua"/>
+	<Script file="GenericTriggers.lua"/>
+	<Script file="Conditions.lua"/>
+	<Script file="Actions.lua"/>
+	<Script file="Transmission.lua"/>
+	<Script file="MinimapIcon.lua"/>
+</Ui>

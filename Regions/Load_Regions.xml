@@ -1,0 +1,13 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Regions.lua"/>
+	<Script file="Icon.lua"/>
+	<Script file="AuraBar.lua"/>
+	<Script file="Texts.lua"/>
+	<Script file="SubTexts.lua"/>
+	<Script file="Text.lua"/>
+	<Script file="Texture.lua"/>
+	<Script file="ProgressTexture.lua"/>
+	<Script file="Model.lua"/>
+	<Script file="Group.lua"/>
+	<Script file="DynamicGroup.lua"/>
+</Ui>

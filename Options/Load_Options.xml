@@ -1,0 +1,11 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Include file="OptionsFrame.xml"/>
+	<Script file="TriggerOptions.lua"/>
+	<Script file="LoadOptions.lua"/>
+	<Script file="ConditionOptions.lua"/>
+	<Script file="ActionOptions.lua"/>
+	<Script file="GenericTriggerOptions.lua"/>
+	<Script file="ModelPaths.lua"/>
+	<Script file="AuraOptions.lua"/>
+	<Script file="OptionsFrame.lua"/>
+</Ui>
