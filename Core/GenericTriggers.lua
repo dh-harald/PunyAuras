@@ -18,6 +18,9 @@
 --     or equipment slot the item is in (GetContainerItemCooldown,
 --     GetInventoryItemCooldown); an item in neither has no cooldown to
 --     read, and its trigger is inactive.
+--   * Spell usability and range: the client has neither IsUsableSpell nor
+--     IsSpellInRange, so both are read from an action slot holding the
+--     spell (IsUsableAction, IsActionInRange); see "Action Usable".
 --   * Items are found by name, read from their links; the bank's bags only
 --     count while the bank is open.
 --   * Faction Reputation looks the faction up by name among the factions
@@ -210,6 +213,118 @@ local function SpellKnown(trigger)
 	return { active = active, found = known, icon = SpellIcon(name), name = name }
 end
 Register("spell", "Spell Known", SpellKnown,
+	function(trigger) return SpellIcon(Trim(trigger.spellName)) end)
+
+-- Action slots ------------------------------------------------------------------
+
+local ACTION_SLOTS = 120
+-- How often the slot map is rebuilt without an event, for a client that
+-- does not announce every action bar change.
+local ACTION_RESCAN = 5
+-- How often the range is read again while there is a target: the client
+-- sends no event when the distance changes.
+local RANGE_INTERVAL = 0.2
+
+-- The action slot of each spell on the action bars by lowercased name
+-- (the lowest slot when a spell is on several), and when it was built.
+-- The 1.12.1 client names an action's spell only in its tooltip; a slot's
+-- name is read again only when its icon changes (slotMemo). Macros are
+-- left out: Unreal Azeroth does not range-check a macro's spell.
+local actionSlots, actionSlotsTime
+local slotMemo = {}
+
+function PA:InvalidateActionSlots()
+	actionSlots = nil
+end
+
+local function ActionSlots()
+	local now = GetTime()
+	if actionSlots and now - actionSlotsTime < ACTION_RESCAN then return actionSlots end
+	actionSlots, actionSlotsTime = {}, now
+	local slot
+	for slot = 1, ACTION_SLOTS do
+		local okHas, has = pcall(HasAction, slot)
+		local okText, text = pcall(GetActionText, slot)
+		local isMacro = okText and type(text) == "string" and text ~= ""
+		if okHas and Compat.bool(has) and not isMacro then
+			local okIcon, icon = pcall(GetActionTexture, slot)
+			icon = okIcon and icon or nil
+			local memo = slotMemo[slot]
+			if not (memo and memo.icon == icon) then
+				memo = { icon = icon, name = PA:ScanTooltipName("SetAction", slot) }
+				slotMemo[slot] = memo
+			end
+			if memo.name then
+				local key = string.lower(memo.name)
+				if not actionSlots[key] then actionSlots[key] = slot end
+			end
+		else
+			slotMemo[slot] = nil
+		end
+	end
+	return actionSlots
+end
+
+-- The action slot holding spell `name`, or nil when it is on no action bar.
+function PA:FindActionSlot(name)
+	if type(name) ~= "string" or name == "" then return nil end
+	return ActionSlots()[string.lower(name)]
+end
+
+-- WeakAuras' "Action Usable" (Spell Usable), read from the spell's action
+-- slot (PA:FindActionSlot):
+--   * usable: IsUsableAction (mana, reagents, form); a spell on no action
+--     bar counts as usable while it is known. Unless
+--     `use_ignoreSpellCooldown`, it is not usable on its own cooldown (the
+--     spellbook's; the global cooldown does not count, as in WeakAuras).
+--   * `use_targetRequired`: a living target, for which the slot's range
+--     check answers (IsActionInRange gives nil when it has nothing to
+--     check; Unreal Azeroth never gives nil).
+--   * `spellInRange` (tested by conditions): the target is within the
+--     spell's range. A spell on no action bar is never in range, nor one
+--     without a range on Unreal Azeroth, which reports 0 for those as for
+--     out of range.
+-- An unknown spell is not usable. `use_inverse` flips the result.
+local function ActionUsable(trigger)
+	local name = Trim(trigger.spellName)
+	local state = { name = name, icon = SpellIcon(name) }
+	local index, book = PA:FindSpell(name)
+	local usable, range = false, nil
+	local slot = index and PA:FindActionSlot(name)
+	local okTarget, hasTarget = pcall(UnitExists, "target")
+	hasTarget = okTarget and Compat.bool(hasTarget)
+	if slot and hasTarget then
+		local okRange, inRange = pcall(IsActionInRange, slot)
+		if okRange then range = inRange end
+		PA:WakeTriggersAt(GetTime() + RANGE_INTERVAL)
+	end
+	state.spellInRange = hasTarget and Compat.bool(range)
+	if index then
+		usable = true
+		if slot then
+			local okUsable, isUsable = pcall(IsUsableAction, slot)
+			usable = okUsable and Compat.bool(isUsable)
+		end
+		if usable and not trigger.use_ignoreSpellCooldown then
+			local ok, start, duration, enable = pcall(GetSpellCooldown, index, book)
+			local onCooldown
+			if ok then onCooldown, start, duration = ReadCooldown(start, duration, enable, false) end
+			if onCooldown then
+				usable = false
+				PA:WakeTriggersAt(start + duration)
+			end
+		end
+		if usable and trigger.use_targetRequired then
+			local okDead, dead = pcall(UnitIsDeadOrGhost, "target")
+			usable = hasTarget and not (okDead and Compat.bool(dead)) and (not slot or range ~= nil)
+		end
+	end
+	state.found = usable
+	state.active = usable
+	if trigger.use_inverse then state.active = not usable end
+	return state
+end
+Register("spell", "Action Usable", ActionUsable,
 	function(trigger) return SpellIcon(Trim(trigger.spellName)) end)
 
 -- Items -------------------------------------------------------------------------

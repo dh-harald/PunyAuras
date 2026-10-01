@@ -101,6 +101,12 @@ local function ScanName(setter, a1, a2, a3)
 	return name
 end
 
+-- The first line of the scan tooltip after `setter(...)`, for the generic
+-- triggers (an action slot's spell name).
+function PA:ScanTooltipName(setter, a1, a2, a3)
+	return ScanName(setter, a1, a2, a3)
+end
+
 -- Names by aura slot, kept across evaluations: an aura in the same slot
 -- with the same icon is taken to be the same aura, so its tooltip is read
 -- once rather than on every evaluation.
@@ -974,6 +980,8 @@ local GENERIC_EVENTS = {
 	"PLAYER_UPDATE_RESTING",
 	"PLAYER_FLAGS_CHANGED",
 	"UNIT_FACTION",
+	"ACTIONBAR_SLOT_CHANGED",
+	"ACTIONBAR_UPDATE_USABLE",
 }
 local isGenericEvent = {}
 
@@ -1001,6 +1009,7 @@ function PA:InitializeTriggers()
 			return
 		end
 		if isGenericEvent[name] then
+			if name == "ACTIONBAR_SLOT_CHANGED" then PA:InvalidateActionSlots() end
 			dirty = true
 			return
 		end
@@ -1008,6 +1017,7 @@ function PA:InitializeTriggers()
 			or name == "PLAYER_ENTERING_WORLD" then
 			PA:CacheSpellbook()
 			PA:InvalidateKnownSpells()
+			PA:InvalidateActionSlots()
 		elseif name == "UNIT_PET" then
 			PA:InvalidateKnownSpells()
 		end

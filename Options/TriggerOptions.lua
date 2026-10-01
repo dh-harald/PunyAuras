@@ -46,6 +46,7 @@ local TRIGGER_EVENTS = {
 		["Cooldown Progress (Spell)"] = L["Cooldown/Charges/Count"],
 		["Global Cooldown"] = L["Global Cooldown"],
 		["Spell Known"] = L["Spell Known"],
+		["Action Usable"] = L["Spell Usable"],
 	},
 	item = {
 		["Weapon Enchant"] = L["Weapon Enchant"],

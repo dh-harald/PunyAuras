@@ -113,6 +113,9 @@ local EVENT_VARIABLES = {
 	["Cooldown Progress (Equipment Slot)"] = COOLDOWN_VARIABLES,
 	["Cooldown Progress (Item)"] = COOLDOWN_VARIABLES,
 	["Global Cooldown"] = TIMED_VARIABLES,
+	["Action Usable"] = Variables({
+		spellInRange = { display = L["Spell in Range"], type = "bool" },
+	}),
 	["Item Count"] = Variables({
 		count = { display = L["Item Count"], type = "number" },
 	}),

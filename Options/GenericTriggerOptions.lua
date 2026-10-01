@@ -134,6 +134,28 @@ PA.genericTriggerOptions["Spell Known"] = function(args, trigger, onChange)
 	args.use_inverse = Toggle(L["Inverse"], 5)
 end
 
+-- WeakAuras' "Action Usable" (Spell Usable): the 1.12.1 client reads a
+-- spell's usability and range only from an action slot, so the spell must
+-- be on an action bar; the line under the name tells whether it is.
+PA.genericTriggerOptions["Action Usable"] = function(args, trigger, onChange)
+	args.spellName = NameInput(trigger, "spellName", L["Spell"], spellDesc, 3, onChange)
+	args.actionSlotNote = {
+		type = "description",
+		order = 4,
+		name = function()
+			local name = Trim(trigger.spellName)
+			if name == "" then return L["The spell must be on one of your action bars (any page, not in a macro): its usability and range are read from there."] end
+			local slot = PA:FindActionSlot(name)
+			if slot then return string.format(L["On action button %d."], slot) end
+			return "|cFFFF4040" .. L["Not on your action bars: never in range, and usable while known (mana and reagents are not checked). Put it on any action bar page, not in a macro."] .. "|r"
+		end,
+	}
+	args.use_targetRequired = Toggle(L["Require Valid Target"], 5,
+		L["Active only with a living target the spell's range check answers for."])
+	args.use_ignoreSpellCooldown = Toggle(L["Ignore Spell Cooldown/Charges"], 6)
+	args.use_inverse = Toggle(L["Inverse"], 7)
+end
+
 PA.genericTriggerOptions["Cooldown Progress (Equipment Slot)"] = function(args, trigger, onChange)
 	args.itemSlot = {
 		type = "select",

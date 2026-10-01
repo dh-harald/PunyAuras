@@ -296,6 +296,14 @@ L["The name of a spell in your or your pet's spellbook; its highest rank is used
 L["The item's name, as its link shows it."] = true
 L["The item's name, as its link shows it. Its cooldown is read while it is in your bags or equipped."] = true
 L["Pet Spell"] = true
+L["Spell Usable"] = true
+L["Spell in Range"] = true
+L["Require Valid Target"] = true
+L["Ignore Spell Cooldown/Charges"] = true
+L["Active only with a living target the spell's range check answers for."] = true
+L["The spell must be on one of your action bars (any page, not in a macro): its usability and range are read from there."] = true
+L["On action button %d."] = true
+L["Not on your action bars: never in range, and usable while known (mana and reagents are not checked). Put it on any action bar page, not in a macro."] = true
 L["Item Slot"] = true
 L["Head"] = true
 L["Neck"] = true
