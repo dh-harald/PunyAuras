@@ -11,8 +11,9 @@
 -- them adds a check. Combinations nest up to MAX_DEPTH levels, WeakAuras'
 -- limit. The first condition is never "Else If" (WeakAuras'
 -- fixUpLinkedInFirstCondition). A "Chat Message" change takes the chat
--- message's rows of the Actions tab (PA:AddChatMessageArgs); the other
--- actions (sound, glow, custom code) are not part of this addon.
+-- message's rows of the Actions tab (PA:AddChatMessageArgs), a "Sound"
+-- change its sound rows (PA:AddSoundFileArgs) after "Play" / "Loop" /
+-- "Stop"; the other actions (glow, custom code) are not part of this addon.
 
 local PA, L = unpack(PunyAuras)
 local Compat = PunyAuras.Compat
@@ -31,6 +32,9 @@ local STRING_OPERATORS = {
 	["match('%s')"] = L["Matches (Pattern)"],
 }
 local BOOL_VALUES = { [1] = L["True"], [0] = L["False"] }
+
+-- WeakAuras' sound_condition_types.
+local SOUND_TYPES = { Play = L["Play"], Loop = L["Loop"], Stop = L["Stop"] }
 
 -- The dropdown entry that removes a combination's check; the brackets sort
 -- it first.
@@ -327,6 +331,30 @@ local function ChangeValueArg(change, def, order, Changed)
 		get = function() return change.value ~= nil and tostring(change.value) or "" end, set = Set }
 end
 
+-- The rows of a "Sound" change `value` (WeakAuras' sound condition): play
+-- once, loop, or stop the loop; the sound; the repeat interval of a loop.
+local function AddSoundArgs(ctx, c, value)
+	local Changed = ctx.Changed
+	local prefix = "sound" .. c .. "_"
+	ctx.args[prefix .. "sound_type"] = {
+		type = "select",
+		name = L["Sound"],
+		desc = L["Stop ends the repetition of a looping sound; the sound playing at the moment runs to its end."],
+		order = NextOrder(ctx),
+		values = SOUND_TYPES,
+		get = function() return value.sound_type end,
+		set = function(info, v)
+			value.sound_type = v
+			Changed()
+		end,
+	}
+	local function Stopping() return value.sound_type == "Stop" end
+	PA:AddSoundFileArgs(ctx.args, value, prefix, NextOrder(ctx), Changed, nil, Stopping)
+	ctx.order = ctx.order + 1
+	ctx.args[prefix .. "sound_repeat"] = PA:SoundRepeatArg(value, L["Repeat every"], NextOrder(ctx),
+		Changed, nil, function() return value.sound_type ~= "Loop" end)
+end
+
 -- The rows of the changes of the condition.
 local function AddChangeArgs(ctx)
 	local args, data, Changed, Rebuild = ctx.args, ctx.data, ctx.Changed, ctx.Rebuild
@@ -351,8 +379,11 @@ local function AddChangeArgs(ctx)
 			set = function(info, value)
 				if value == change.property then return end
 				change.property = value
-				if properties[value] and properties[value].type == "chat" then
+				local propertyType = properties[value] and properties[value].type
+				if propertyType == "chat" then
 					change.value = { message_type = "PRINT", message = "" }
+				elseif propertyType == "sound" then
+					change.value = { sound_type = "Play" }
 				else
 					change.value = CopyValue(PA:GetBaseProperty(data, value))
 				end
@@ -365,6 +396,9 @@ local function AddChangeArgs(ctx)
 			if type(change.value) ~= "table" then change.value = {} end
 			PA:AddChatMessageArgs(args, change.value, "chat" .. c .. "_", NextOrder(ctx), Changed)
 			ctx.order = ctx.order + 1
+		elseif def and def.type == "sound" then
+			if type(change.value) ~= "table" then change.value = { sound_type = "Play" } end
+			AddSoundArgs(ctx, c, change.value)
 		elseif change.property then
 			args["value" .. c] = ChangeValueArg(change, def, NextOrder(ctx), Changed)
 		end

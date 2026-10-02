@@ -1,20 +1,23 @@
--- Actions: chat messages sent when an aura shows or hides, or when one of
--- its conditions starts to hold (WeakAuras.lua PerformActions and
--- HandleChatAction, RegionPrototype.lua SendChat; GPLv2).
+-- Actions: chat messages and sounds when an aura shows or hides, or when
+-- one of its conditions starts to hold (WeakAuras.lua PerformActions and
+-- HandleChatAction, RegionPrototype.lua SendChat and SoundPlay; GPLv2).
 --
 -- Data, in WeakAuras' shape:
 --   data.actions = { init = {}, start = {...}, finish = {...} }
 -- `start` ("On Show") and `finish` ("On Hide") hold do_message,
 -- message_type, message, message_dest (a whisper's target) and r / g / b
--- (the colour of a message to the chat frame or the error frame). A
--- condition's "chat" change (Core/Conditions.lua) holds the same fields
--- but do_message.
+-- (the colour of a message to the chat frame or the error frame), and
+-- do_sound, sound, sound_path; `start` also do_loop and sound_repeat. A
+-- condition's "chat" change (Core/Conditions.lua) holds the message fields
+-- but do_message; its "sound" change holds sound_type ("Play", "Loop",
+-- "Stop"), sound, sound_path and sound_repeat. Playing: Core/Sounds.lua.
 --
 -- The trigger engine hands every aura's old and new state to
 -- PA:RunActions after each evaluation: "On Show" runs when the aura turns
 -- active, "On Hide" when it turns inactive, with the placeholders of the
--- last active state; a condition's message when the condition starts to
--- hold. Nothing is sent while the options window is open, as in WeakAuras.
+-- last active state; a condition's message and sound when the condition
+-- starts to hold. Hiding ends a repeating sound. Nothing is sent or played
+-- while the options window is open, as in WeakAuras.
 --
 -- The message types are WeakAuras' send_chat_message_types that the
 -- 1.12.1 client has. WeakAuras sends Say and Yell only inside an instance
@@ -104,8 +107,12 @@ end
 
 local function Perform(data, when, auraState)
 	local actions = type(data.actions) == "table" and data.actions[when]
-	if type(actions) == "table" and actions.do_message then
+	if type(actions) ~= "table" then return end
+	if actions.do_message then
 		PA:SendActionMessage(actions, auraState)
+	end
+	if actions.do_sound and actions.sound then
+		PA:SoundPlay(data.id, actions)
 	end
 end
 
@@ -128,6 +135,7 @@ function PA:RunActions(data, old, new)
 		Perform(data, "start", new)
 	elseif wasActive and not new.active then
 		Perform(data, "finish", old)
+		self:SoundRepeatStop(data.id)
 	end
 
 	local active = new.activeConditions
@@ -144,6 +152,8 @@ function PA:RunActions(data, old, new)
 				for c = 1, Compat.getn(changes) do
 					if changes[c].property == "chat" then
 						self:SendActionMessage(changes[c].value, new)
+					elseif changes[c].property == "sound" then
+						self:SoundPlay(data.id, changes[c].value)
 					end
 				end
 			end

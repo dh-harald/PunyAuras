@@ -1,8 +1,10 @@
 -- The Actions tab (WeakAurasOptions ActionOptions.lua, GPLv2): "On Show"
 -- and "On Hide", each a chat message (Core/Actions.lua) -- its type, its
 -- text with the text placeholders, a whisper's target and a colour for the
--- chat frame and the error frame. WeakAuras' sound, glow and custom code
--- actions are not part of this addon.
+-- chat frame and the error frame -- and a sound (Core/Sounds.lua): a
+-- LibSharedMedia sound or a typed file path; "On Show" can repeat it. WeakAuras' sound channel, "Sound by
+-- Kit ID", "Stop Sound", glow and custom code actions are not part of this
+-- addon.
 
 local PA, L = unpack(PunyAuras)
 
@@ -73,10 +75,74 @@ function PA:AddChatMessageArgs(args, options, prefix, order, onChange, disabled)
 	}
 end
 
+-- The sound file rows of the sound `options` describe (an action's, or a
+-- condition's "sound" change value) into `args`, keyed `prefix` .. field,
+-- ordered from `order` on: the sound, and the file path for "Custom". A
+-- sound picked or a path typed plays at once, as in WeakAuras; the list's
+-- rows have a play button of their own (LibConfig's LSM30_Sound). `hidden`
+-- hides both (a condition's "Stop"), `disabled` greys them out.
+function PA:AddSoundFileArgs(args, options, prefix, order, onChange, disabled, hidden)
+	args[prefix .. "sound"] = {
+		type = "select",
+		name = L["Sound"],
+		order = order,
+		dialogControl = "LSM30_Sound",
+		values = function() return PA:GetSoundValues() end,
+		disabled = disabled,
+		hidden = hidden,
+		get = function() return options.sound end,
+		set = function(info, value)
+			options.sound = value
+			if onChange then onChange() end
+			PA:PlaySoundPath(value)
+		end,
+	}
+	args[prefix .. "sound_path"] = {
+		type = "input",
+		name = L["Sound File Path"],
+		desc = L["A file of the client (Sound\\Interface\\LevelUp.wav) or of an addon (Interface\\AddOns\\<addon>\\<file>.ogg). Unreal Azeroth plays .ogg and .wav files, not .mp3."],
+		width = "full",
+		order = order + 0.1,
+		disabled = disabled,
+		hidden = function()
+			if hidden and hidden() then return true end
+			return options.sound ~= PA.CUSTOM_SOUND
+		end,
+		get = function() return options.sound_path or "" end,
+		set = function(info, value)
+			options.sound_path = value
+			if onChange then onChange() end
+			PA:PlaySoundPath(value)
+		end,
+	}
+end
+
+-- The repeat interval row of a looping sound.
+function PA:SoundRepeatArg(options, name, order, onChange, disabled, hidden)
+	return {
+		type = "range",
+		name = name,
+		desc = L["Seconds between two plays of the sound, while the aura is shown."],
+		order = order,
+		min = 0,
+		softMax = 100,
+		step = 0.1,
+		bigStep = 1,
+		disabled = disabled,
+		hidden = hidden,
+		get = function() return tonumber(options.sound_repeat) or 0 end,
+		set = function(info, value)
+			options.sound_repeat = value
+			if onChange then onChange() end
+		end,
+	}
+end
+
 -- One of "On Show" (`when` "start") / "On Hide" ("finish").
 local function WhenGroup(data, when, name, order, onChange)
 	local actions = data.actions[when]
 	local function Off() return not actions.do_message end
+	local function SoundOff() return not actions.do_sound end
 	local args = {
 		do_message = {
 			type = "toggle",
@@ -91,6 +157,33 @@ local function WhenGroup(data, when, name, order, onChange)
 		},
 	}
 	PA:AddChatMessageArgs(args, actions, "", 2, onChange, Off)
+
+	args.do_sound = {
+		type = "toggle",
+		name = L["Play Sound"],
+		order = 3,
+		get = function() return actions.do_sound and true or false end,
+		set = function(info, value)
+			actions.do_sound = value
+			if onChange then onChange() end
+		end,
+	}
+	if when == "start" then
+		args.do_loop = {
+			type = "toggle",
+			name = L["Loop"],
+			order = 3.1,
+			disabled = SoundOff,
+			get = function() return actions.do_loop and true or false end,
+			set = function(info, value)
+				actions.do_loop = value
+				if onChange then onChange() end
+			end,
+		}
+		args.sound_repeat = PA:SoundRepeatArg(actions, L["Repeat After"], 3.2, onChange, SoundOff,
+			function() return not actions.do_loop end)
+	end
+	PA:AddSoundFileArgs(args, actions, "", 3.3, onChange, SoundOff)
 	return {
 		type = "group",
 		name = name,

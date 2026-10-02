@@ -14,7 +14,7 @@ the WeakAuras Team, also GPLv2. The options window follows the layout of
 WeakAuras' own options window; the aura data model, the region types (icon,
 progress bar, text, texture, progress texture, model, group, dynamic group)
 and their options, the sub-region texts, the conditions, the chat message
-actions, the text placeholders, the texture picker, the aura trigger, the
+and sound actions, the text placeholders, the texture picker, the aura trigger, the
 weapon enchant, health and power triggers, the spell, item and player info
 triggers (cooldowns, items, experience, reputation, money, forms, talents,
 location, pet, conditions), the load conditions, and the aura export and
@@ -42,3 +42,11 @@ The textures in `Media/Textures/Auras/` are WeakAuras' own, re-encoded
 `PunyAurasTriangle45`, `PunyAurasSquare_Border_5px`) are the shapes of
 the same names (`square_border_5px` in lower case) in
 `WeakAuras/Media/Textures/`.
+
+The sounds in `Media/Sounds/` are WeakAuras' own, under the names
+WeakAuras gives them, renamed with a `PunyAuras` prefix:
+`PunyAuras<File>.ogg` is `WeakAuras/Media/Sounds/<File>.ogg` or
+`WeakAuras/PowerAurasMedia/Sounds/<file>.ogg` (the Power Auras sounds
+WeakAuras ships; the first letter in upper case). The files are unchanged,
+except `PunyAurasBrass.ogg` and `PunyAurasGlass.ogg`, re-encoded from
+WeakAuras' `Brass.mp3` and `Glass.mp3`.

@@ -402,6 +402,18 @@ L["Guild"] = true
 L["Officer"] = true
 L["Whisper"] = true
 L["BG>Raid>Party>Say"] = true
+L["Play Sound"] = true
+L["Loop"] = true
+L["Repeat After"] = true
+L["Repeat every"] = true
+L["Sound"] = true
+L["Custom"] = true
+L["Sound File Path"] = true
+L["A file of the client (Sound\\Interface\\LevelUp.wav) or of an addon (Interface\\AddOns\\<addon>\\<file>.ogg). Unreal Azeroth plays .ogg and .wav files, not .mp3."] = true
+L["Seconds between two plays of the sound, while the aura is shown."] = true
+L["Play"] = true
+L["Stop"] = true
+L["Stop ends the repetition of a looping sound; the sound playing at the moment runs to its end."] = true
 
 --Load options
 L["General"] = true

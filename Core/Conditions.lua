@@ -26,10 +26,11 @@
 -- (`show`) tests the trigger's activity itself. A condition on the time
 -- left wakes the trigger engine when it will change.
 --
--- A "chat" change is an action, not a setting: its message is sent when the
--- condition starts to hold (Core/Actions.lua). Not evaluated: WeakAuras'
--- custom checks, range checks and the other actions (sound, glow, custom
--- code); a check of an unknown variable tests nothing.
+-- A "chat" or "sound" change is an action, not a setting: its message is
+-- sent, its sound played, when the condition starts to hold
+-- (Core/Actions.lua). Not evaluated: WeakAuras' custom checks, range checks
+-- and the other actions (glow, custom code); a check of an unknown variable
+-- tests nothing.
 
 local _G = _G or getfenv()
 local PA, L = unpack(PunyAuras)
@@ -242,6 +243,11 @@ PA.regionProperties = {
 }
 
 local CHAT_PROPERTY = { display = L["Chat Message"], type = "chat" }
+local SOUND_PROPERTY = { display = L["Sound"], type = "sound" }
+
+-- The properties that are actions run by Core/Actions.lua, not settings of
+-- the region.
+PA.actionProperties = { chat = true, sound = true }
 
 -- A sub-region text's properties (WeakAuras SubText.lua `properties`),
 -- under "sub.<index>." in an aura's property list.
@@ -265,10 +271,11 @@ function PA:GetConditionProperties(data)
 	for key, def in pairs(self.regionProperties[data.regionType] or {}) do
 		properties[key] = def
 	end
-	-- WeakAuras' "Chat Message" (regionPrototype.AddProperties): an action
-	-- run when the condition starts to hold (Core/Actions.lua), not a
-	-- setting of the region.
+	-- WeakAuras' "Chat Message" and "Sound" (regionPrototype.AddProperties):
+	-- actions run when the condition starts to hold (Core/Actions.lua), not
+	-- settings of the region.
 	properties.chat = CHAT_PROPERTY
+	properties.sound = SOUND_PROPERTY
 	if type(data.subRegions) == "table" then
 		local number = 0
 		local i
@@ -490,7 +497,7 @@ function PA:GetRegionData(id)
 						end
 						copy.subRegions[index][setting] = change.value
 					end
-				elseif setting and setting ~= "chat" then
+				elseif setting and not self.actionProperties[setting] then
 					copy[setting] = change.value
 				end
 			end

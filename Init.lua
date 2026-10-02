@@ -43,6 +43,7 @@ function AddOn:OnInitialize()
 
 	self:InitializeMinimapIcon()
 	self:InitializeOptions()
+	self:InitializeSounds()
 	self:InitializeTriggers()
 
 	-- /wa is WeakAuras' own command; /pa is its PunyAuras counterpart.
