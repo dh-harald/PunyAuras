@@ -668,23 +668,56 @@ function PA:GetTriggerOptions(data, onChange, onRebuild)
 			inline = true,
 			order = 1,
 			args = {
+				-- WeakAuras' trigger_require_types (trigger_require_types_one
+				-- for a single trigger).
 				disjunctive = {
 					type = "select",
 					name = L["Required for Activation"],
 					order = 1,
 					values = function()
 						if count > 1 then
-							return { any = L["Any Triggers"], all = L["All Triggers"] }
+							return { any = L["Any Triggers"], all = L["All Triggers"],
+								custom = L["Custom Function"] }
 						end
-						return { any = string.format(L["Trigger %d"], 1) }
+						return { any = string.format(L["Trigger %d"], 1), custom = L["Custom Function"] }
 					end,
 					get = function()
 						if count > 1 then return triggers.disjunctive or "all" end
+						if triggers.disjunctive == "custom" then return "custom" end
 						return "any"
 					end,
 					set = function(info, value)
 						triggers.disjunctive = value
 						if onChange then onChange() end
+					end,
+				},
+				-- WeakAuras' custom_trigger_combination code option, without
+				-- its expanded editor; the box saves when it loses the focus.
+				customTriggerLogic = {
+					type = "input",
+					name = L["Custom"],
+					desc = L["A Lua function that gets the triggers' activity (true or false by trigger number) and returns whether the aura is active, e.g. function(t) return t[1] and not t[2] end"],
+					multiline = 8,
+					width = "full",
+					order = 2,
+					hidden = function() return triggers.disjunctive ~= "custom" end,
+					get = function()
+						return triggers.customTriggerLogic or ""
+					end,
+					set = function(info, value)
+						triggers.customTriggerLogic = value
+						if onChange then onChange() end
+					end,
+				},
+				customTriggerLogicError = {
+					type = "description",
+					order = 2.1,
+					name = function()
+						local err = PA:TriggerLogicError(data)
+						return err and ("|cffff4040" .. err .. "|r") or ""
+					end,
+					hidden = function()
+						return triggers.disjunctive ~= "custom" or PA:TriggerLogicError(data) == nil
 					end,
 				},
 			},

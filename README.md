@@ -17,8 +17,9 @@ and their options, the sub-region texts, the conditions, the chat message
 and sound actions, the text placeholders, the texture picker, the aura trigger, the
 weapon enchant, health and power triggers, the spell, item and player info
 triggers (cooldowns, items, experience, reputation, money, forms, talents,
-location, pet, conditions), the load conditions, and the aura export and
-import (transmission table, uids, import naming) are ports of WeakAuras'
+location, pet, conditions), the trigger combinations with the custom
+function and its sandbox, the load conditions, and the aura export and
+import (transmission table, uids, import naming, custom code warning) are ports of WeakAuras'
 own. The export string's format is PunyAuras' own, not WeakAuras'. These
 textures are taken from WeakAuras unchanged:
 

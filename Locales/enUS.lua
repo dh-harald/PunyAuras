@@ -75,6 +75,15 @@ L["Error decoding."] = true
 L["Error decompressing"] = true
 L["Error deserializing"] = true
 L["Unknown aura type: %s"] = true
+L["This aura contains custom Lua code.\nMake sure you can trust the person who sent it!"] = true
+
+--Custom code
+L["Error in Aura '%s'"] = true
+L["Forbidden function or table: %s"] = true
+L["No code"] = true
+L["The code does not evaluate to a function."] = true
+L["Custom Trigger Combination"] = true
+L["%s - Trigger Logic"] = true
 
 --Auras
 L["New"] = true
@@ -207,6 +216,8 @@ L["Trigger Combination"] = true
 L["Required for Activation"] = true
 L["Any Triggers"] = true
 L["All Triggers"] = true
+L["Custom Function"] = true
+L["A Lua function that gets the triggers' activity (true or false by trigger number) and returns whether the aura is active, e.g. function(t) return t[1] and not t[2] end"] = true
 L["Add Trigger"] = true
 L["Delete Trigger"] = true
 L["Trigger %d"] = true

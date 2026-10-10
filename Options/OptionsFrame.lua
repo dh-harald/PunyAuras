@@ -1908,9 +1908,66 @@ local function HasPendingImport()
 	return IsTransferView() and transfer.mode == "import" and transfer.pending ~= nil
 end
 
+-- An import with custom code (PA:FindCustomCode) shows WeakAuras' warning
+-- and the code itself between the text box and the summary, before
+-- anything is imported (`transfer.code`); the box gives up the area's
+-- height. The area holds CODE_LINES lines of its font, so longer code is
+-- cut, and every line at CODE_LINE_LENGTH characters, so none wraps.
+local CODE_AREA_HEIGHT = 140
+local CODE_LINES = 10
+local CODE_LINE_LENGTH = 90
+
+local function HasPendingCode()
+	return HasPendingImport() and transfer.code ~= nil
+end
+
+local function PlaceTransferBox()
+	local view, box = Get("RightPaneTransfer"), Get("RightPaneTransferBox")
+	local bottom = 72
+	if transfer.code then bottom = bottom + CODE_AREA_HEIGHT + 4 end
+	box:ClearAllPoints()
+	box:SetPoint("TOPLEFT", view, "TOPLEFT", 0, -28)
+	box:SetPoint("BOTTOMRIGHT", view, "BOTTOMRIGHT", 0, bottom)
+end
+
+-- The code area's text: the warning, then each piece of code under its
+-- name. A "|" is doubled, so the code shows as written.
+local function CustomCodeText(codes)
+	local lines = {}
+	local cut = false
+	local function Add(line)
+		if Compat.getn(lines) < CODE_LINES then
+			table.insert(lines, line)
+		else
+			cut = true
+		end
+	end
+	local warning = L["This aura contains custom Lua code.\nMake sure you can trust the person who sent it!"]
+	local part
+	for part in Compat.gmatch(warning .. "\n", "(.-)\n") do
+		Add("|cffff4040" .. part .. "|r")
+	end
+	local i
+	for i = 1, Compat.getn(codes) do
+		Add("|cffffd200" .. string.gsub(codes[i].name, "|", "||") .. "|r")
+		local line
+		for line in Compat.gmatch(string.gsub(codes[i].code, "\r", "") .. "\n", "(.-)\n") do
+			line = string.gsub(line, "\t", "    ")
+			if string.len(line) > CODE_LINE_LENGTH then
+				line = string.sub(line, 1, CODE_LINE_LENGTH) .. "..."
+			end
+			Add((string.gsub(line, "|", "||")))
+		end
+	end
+	if cut then lines[CODE_LINES] = "..." end
+	return table.concat(lines, "\n")
+end
+
 -- Describes the pasted text: what an import would add, or why it cannot.
 local function UpdateImportSummary(text)
 	transfer.pending = nil
+	transfer.code = nil
+	PlaceTransferBox()
 	local status = Get("RightPaneTransferStatus")
 	if string.gsub(text, "%s+", "") == "" then
 		status:SetText("")
@@ -1938,6 +1995,17 @@ local function UpdateImportSummary(text)
 	end
 	status:SetText(table.concat(lines, "\n"))
 	Get("RightPaneTransferImportText"):SetText(match and L["Import as Copy"] or L["Import"])
+
+	local codes = PA:FindCustomCode(pending.data)
+	local i
+	for i = 1, Compat.getn(pending.children) do
+		PA:FindCustomCode(pending.children[i], codes)
+	end
+	if Compat.getn(codes) > 0 then
+		transfer.code = CustomCodeText(codes)
+	end
+	Get("RightPaneTransferCode"):SetText(transfer.code or "")
+	PlaceTransferBox()
 	UpdatePartsShown()
 end
 
@@ -1960,6 +2028,8 @@ local function ResetTransfer()
 	transfer.mode = nil
 	transfer.text = nil
 	transfer.pending = nil
+	transfer.code = nil
+	PlaceTransferBox()
 	if transfer.edit then
 		transfer.edit:ClearFocus()
 		transfer.edit:SetText("")
@@ -2073,6 +2143,7 @@ local function SetupTransferView()
 		CloseTransfer)
 	SetupPanelButton(AddPart(Get("RightPaneTransferImport"), true, HasPendingImport), L["Import"],
 		ImportPending)
+	AddPart(Get("RightPaneTransferCode"), true, HasPendingCode)
 end
 
 local function SetFrameLevels()
@@ -2169,10 +2240,15 @@ function PA:InitializeOptions()
 	AddPart(Get("ListScrollContent"), true)
 	SetupList()
 
+	-- While the window is open every trigger combination is "any"
+	-- (PA:CombineTriggers): opening and closing it changes which auras are
+	-- active.
 	frame:SetScript("OnShow", function()
 		UpdateList()
+		PA:ScheduleTriggerUpdate()
 	end)
 	frame:SetScript("OnHide", function()
+		PA:ScheduleTriggerUpdate()
 		StopMove()
 		frame.grouping = nil
 		-- Hiding the window does not reliably take the focus away from the

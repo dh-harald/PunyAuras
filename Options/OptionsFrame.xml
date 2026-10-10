@@ -913,6 +913,18 @@
 										</Anchor>
 									</Anchors>
 								</FontString>
+								<FontString name="$parentCode" inherits="GameFontHighlightSmall" justifyH="LEFT" justifyV="TOP" hidden="true">
+									<Size>
+										<AbsDimension x="470" y="140"/>
+									</Size>
+									<Anchors>
+										<Anchor point="BOTTOMLEFT">
+											<Offset>
+												<AbsDimension x="8" y="72"/>
+											</Offset>
+										</Anchor>
+									</Anchors>
+								</FontString>
 							</Layer>
 						</Layers>
 						<Frames>

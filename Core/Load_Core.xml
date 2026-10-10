@@ -6,6 +6,7 @@
 	<Script file="Triggers.lua"/>
 	<Script file="GenericTriggers.lua"/>
 	<Script file="Conditions.lua"/>
+	<Script file="CustomCode.lua"/>
 	<Script file="Sounds.lua"/>
 	<Script file="Actions.lua"/>
 	<Script file="Transmission.lua"/>

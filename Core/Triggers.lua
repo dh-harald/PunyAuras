@@ -722,7 +722,7 @@ end
 local function EvaluateAura(data, loaded)
 	local triggers = data.triggers
 	local states = {}
-	local anyActive, allActive = false, true
+	local actives = {}
 	local i
 	for i = 1, Compat.getn(triggers) do
 		local trigger = triggers[i].trigger
@@ -743,18 +743,11 @@ local function EvaluateAura(data, loaded)
 			state = EvaluateAuraTrigger(trigger)
 		end
 		states[i] = state
-		if state.active then anyActive = true else allActive = false end
+		actives[i] = state.active and true or false
 	end
 
-	local active
-	if Compat.getn(triggers) == 0 then
-		active = false
-	elseif triggers.disjunctive == "all" then
-		active = allActive
-	else
-		active = anyActive
-	end
-	return { active = active, triggers = states }
+	-- All, any, or the custom combination (Core/CustomCode.lua).
+	return { active = PA:CombineTriggers(data, actives), triggers = states }
 end
 
 -- Two expiration times of the same aura; they differ by the rounding of the
