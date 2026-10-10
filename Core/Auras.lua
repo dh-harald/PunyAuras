@@ -73,6 +73,9 @@ PA.DEFAULT_AURA_TEXTURE = PA.AURA_TEXTURE_PATH .. "PunyAurasAura3"
 PA.TEXT_ICON = "Interface\\AddOns\\PunyAuras\\Media\\Textures\\PunyAurasText"
 -- The model region's icon in the list and the New view.
 PA.MODEL_ICON = "Interface\\Icons\\Spell_Holy_HolyBolt"
+-- The empty region's icon in the list (while it has no thumbnailIcon) and
+-- the New view: the empty action slot WeakAuras' thumbnail draws.
+PA.EMPTY_ICON = "Interface\\Buttons\\UI-Quickslot2"
 
 -- Region types with their defaults, as in WeakAuras' RegionTypes/*.lua.
 PA.regionTypes = {
@@ -230,6 +233,23 @@ PA.regionTypes = {
 			frameStrata = 1,
 		},
 	},
+	-- WeakAuras RegionTypes/Empty.lua `default`, with `alpha` from
+	-- regionPrototype.AddAlphaToDefault. The region draws nothing but its
+	-- sub-region texts; `thumbnailIcon` (RegionOptions/Empty.lua) is left
+	-- out as there: unset, the list shows the empty slot.
+	empty = {
+		default = {
+			width = 200,
+			height = 200,
+			alpha = 1,
+			selfPoint = "CENTER",
+			anchorPoint = "CENTER",
+			anchorFrameType = "SCREEN",
+			xOffset = 0,
+			yOffset = 0,
+			frameStrata = 1,
+		},
+	},
 	-- WeakAuras RegionTypes/Group.lua `default`, without its border and
 	-- backdrop settings. `groupIcon` (RegionOptions/Group.lua) is left out
 	-- as there: unset, the list shows the default group icon.
@@ -273,7 +293,8 @@ PA.regionTypes = {
 -- `default`: an icon's text is outlined without a shadow, the others'
 -- shadowed without an outline). The offsets are the `text_anchorXOffset` /
 -- `text_anchorYOffset` WeakAuras reads.
-PA.subTextRegionTypes = { icon = true, aurabar = true, texture = true, progresstexture = true }
+PA.subTextRegionTypes = { icon = true, aurabar = true, texture = true, progresstexture = true,
+	empty = true }
 
 function PA:DefaultSubText(regionType)
 	local icon = (regionType == "icon")
@@ -367,6 +388,7 @@ end
 function PA:PortableIcons(data)
 	data.displayIcon = self:PortableIconPath(data.displayIcon)
 	data.groupIcon = self:PortableIconPath(data.groupIcon)
+	data.thumbnailIcon = self:PortableIconPath(data.thumbnailIcon)
 	data.texture = self:PortableIconPath(data.texture)
 	data.foregroundTexture = self:PortableIconPath(data.foregroundTexture)
 	data.backgroundTexture = self:PortableIconPath(data.backgroundTexture)
@@ -736,9 +758,15 @@ end
 -- the first active trigger's (Core/Triggers.lua); the question mark when
 -- there is none. A group shows its groupIcon, or the default group icon.
 -- The list shows a texture aura by its texture, a text and a model aura by
--- their type's icon, as WeakAuras' thumbnails show the region itself.
+-- their type's icon, as WeakAuras' thumbnails show the region itself, and
+-- an empty aura by its thumbnailIcon or the empty slot.
 function PA:GetAuraIcon(data)
-	if data.regionType == "texture" then
+	if data.regionType == "empty" then
+		if type(data.thumbnailIcon) == "string" and data.thumbnailIcon ~= "" then
+			return data.thumbnailIcon
+		end
+		return self.EMPTY_ICON
+	elseif data.regionType == "texture" then
 		return data.texture or self.DEFAULT_AURA_TEXTURE
 	elseif data.regionType == "progresstexture" then
 		return data.foregroundTexture or self.DEFAULT_AURA_TEXTURE

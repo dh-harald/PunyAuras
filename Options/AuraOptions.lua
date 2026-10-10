@@ -625,6 +625,47 @@ local function TextureDisplayArgs(data, onChange)
 	return args
 end
 
+-- The empty region's settings (WeakAuras RegionOptions/Empty.lua): its
+-- alpha, which only its texts show, and the icon the list shows it by,
+-- chosen in the icon picker.
+local function EmptyDisplayArgs(data, onChange)
+	return {
+		emptyHeader = {
+			type = "header",
+			name = L["Settings"],
+			order = 1,
+		},
+		alpha = {
+			type = "range",
+			name = L["Alpha"],
+			min = 0,
+			max = 1,
+			step = 0.01,
+			isPercent = true,
+			order = 2,
+		},
+		thumbnailIcon = {
+			type = "input",
+			name = L["Thumbnail Icon"],
+			desc = L["An icon name from Interface\\Icons (e.g. Spell_Holy_SealOfSalvation) or a full texture path."],
+			order = 3,
+			get = function()
+				return data.thumbnailIcon and tostring(data.thumbnailIcon) or ""
+			end,
+			set = function(info, value)
+				data.thumbnailIcon = NormalizeIconPath(value)
+				if onChange then onChange(data) end
+			end,
+		},
+		chooseThumbnailIcon = {
+			type = "execute",
+			name = L["Choose"],
+			order = 3.1,
+			func = function() PA:OpenIconPicker(data, "thumbnailIcon") end,
+		},
+	}
+end
+
 -- The progress texture region's settings (WeakAuras RegionOptions/
 -- ProgressTexture.lua), its linear orientations, without the blend mode,
 -- the texture wrap, the rotations, the crop and the slant.
@@ -1065,6 +1106,9 @@ local function DisplayArgs(data, onChange, onRebuild)
 		AddPositionArgs(args, data, 60)
 	elseif data.regionType == "model" then
 		args = ModelDisplayArgs(data, onChange)
+		AddPositionArgs(args, data, 60)
+	elseif data.regionType == "empty" then
+		args = EmptyDisplayArgs(data, onChange)
 		AddPositionArgs(args, data, 60)
 	else
 		args = IconDisplayArgs(data, onChange)

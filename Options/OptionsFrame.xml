@@ -786,7 +786,7 @@
 									</Anchor>
 								</Anchors>
 							</Button>
-							<Button name="$parentIcon" inherits="PunyAurasNewButtonTemplate">
+							<Button name="$parentEmpty" inherits="PunyAurasNewButtonTemplate">
 								<Anchors>
 									<Anchor point="TOPLEFT">
 										<Offset>
@@ -800,7 +800,7 @@
 									</Anchor>
 								</Anchors>
 							</Button>
-							<Button name="$parentModel" inherits="PunyAurasNewButtonTemplate">
+							<Button name="$parentIcon" inherits="PunyAurasNewButtonTemplate">
 								<Anchors>
 									<Anchor point="TOPLEFT">
 										<Offset>
@@ -814,7 +814,7 @@
 									</Anchor>
 								</Anchors>
 							</Button>
-							<Button name="$parentAuraBar" inherits="PunyAurasNewButtonTemplate">
+							<Button name="$parentModel" inherits="PunyAurasNewButtonTemplate">
 								<Anchors>
 									<Anchor point="TOPLEFT">
 										<Offset>
@@ -828,7 +828,7 @@
 									</Anchor>
 								</Anchors>
 							</Button>
-							<Button name="$parentProgressTexture" inherits="PunyAurasNewButtonTemplate">
+							<Button name="$parentAuraBar" inherits="PunyAurasNewButtonTemplate">
 								<Anchors>
 									<Anchor point="TOPLEFT">
 										<Offset>
@@ -842,7 +842,7 @@
 									</Anchor>
 								</Anchors>
 							</Button>
-							<Button name="$parentText" inherits="PunyAurasNewButtonTemplate">
+							<Button name="$parentProgressTexture" inherits="PunyAurasNewButtonTemplate">
 								<Anchors>
 									<Anchor point="TOPLEFT">
 										<Offset>
@@ -856,7 +856,7 @@
 									</Anchor>
 								</Anchors>
 							</Button>
-							<Button name="$parentTexture" inherits="PunyAurasNewButtonTemplate">
+							<Button name="$parentText" inherits="PunyAurasNewButtonTemplate">
 								<Anchors>
 									<Anchor point="TOPLEFT">
 										<Offset>
@@ -866,6 +866,20 @@
 									<Anchor point="TOPRIGHT">
 										<Offset>
 											<AbsDimension x="-8" y="-344"/>
+										</Offset>
+									</Anchor>
+								</Anchors>
+							</Button>
+							<Button name="$parentTexture" inherits="PunyAurasNewButtonTemplate">
+								<Anchors>
+									<Anchor point="TOPLEFT">
+										<Offset>
+											<AbsDimension x="8" y="-392"/>
+										</Offset>
+									</Anchor>
+									<Anchor point="TOPRIGHT">
+										<Offset>
+											<AbsDimension x="-8" y="-392"/>
 										</Offset>
 									</Anchor>
 								</Anchors>

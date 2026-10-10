@@ -240,6 +240,11 @@ PA.regionProperties = {
 		width = WIDTH,
 		height = HEIGHT,
 	},
+	-- WeakAuras' empty region has no properties of its own; its alpha
+	-- comes from regionPrototype.AddProperties.
+	empty = {
+		alpha = ALPHA,
+	},
 }
 
 local CHAT_PROPERTY = { display = L["Chat Message"], type = "chat" }

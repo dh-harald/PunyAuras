@@ -8,6 +8,7 @@
 	<Script file="Texture.lua"/>
 	<Script file="ProgressTexture.lua"/>
 	<Script file="Model.lua"/>
+	<Script file="Empty.lua"/>
 	<Script file="Group.lua"/>
 	<Script file="DynamicGroup.lua"/>
 </Ui>

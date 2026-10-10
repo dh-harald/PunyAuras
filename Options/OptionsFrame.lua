@@ -1334,6 +1334,9 @@ local function SetupNewView()
 	-- The remaining types in WeakAuras' order (by name), each button showing
 	-- the region's default look.
 	local newTypes = {
+		{ key = "Empty", regionType = "empty", title = L["Empty Base Region"],
+			description = L["Shows nothing, except sub elements"],
+			icon = PA.EMPTY_ICON },
 		{ key = "Model", regionType = "model", title = L["Model"],
 			description = L["Shows a 3D model from the game files"],
 			icon = PA.MODEL_ICON },
@@ -1379,10 +1382,10 @@ end
 -- the icon cache of auras seen before (found by name), and from the client's
 -- macro icon list (found by file name). A pick is applied to the aura at
 -- once, so its on-screen preview follows it; Cancel puts the icon settings
--- back.
--- The same view is WeakAuras' TexturePicker for the texture regions
--- (`picker.field` set): it offers the textures that come with the addon
--- (PA.auraTextures) and sets that field of the aura. As WeakAuras'
+-- back. With `picker.field` set, a pick goes into that field of the aura
+-- (the empty region's thumbnailIcon, the texture regions' textures).
+-- The same view is WeakAuras' TexturePicker for the texture regions:
+-- it offers the textures that come with the addon (PA.auraTextures). As WeakAuras'
 -- ModelPicker for the model region (`picker.modelMode`), it offers the
 -- model paths of the 1.12.1 client (PA.modelPaths, Options/ModelPaths.lua)
 -- in a grid of live models: a fixed pool of PlayerModel cells, each given
@@ -1627,7 +1630,7 @@ local function PickIcon(entry)
 	local data = picker.data
 	if not (data and entry) then return end
 	if picker.field then
-		data[picker.field] = entry.texture
+		data[picker.field] = PA:PortableIconPath(entry.texture)
 	elseif PA:IsGroup(data) then
 		data.groupIcon = PA:PortableIconPath(entry.texture)
 	else
@@ -1779,16 +1782,22 @@ local function ShowPicker(title)
 	UpdatePicker()
 end
 
--- Opens the icon picker for `data` (the Display tab's "Choose" button).
-function PA:OpenIconPicker(data)
+-- Opens the icon picker for `data` (the Display tab's "Choose" button):
+-- for its manual icon or a group's groupIcon, or with `field` for that
+-- field (the empty region's thumbnailIcon).
+function PA:OpenIconPicker(data, field)
 	picker.data = data
-	picker.field = nil
+	picker.field = field
 	picker.modelMode = nil
-	picker.original = {
-		iconSource = data.iconSource,
-		displayIcon = data.displayIcon,
-		groupIcon = data.groupIcon,
-	}
+	if field then
+		picker.original = { [field] = data[field] }
+	else
+		picker.original = {
+			iconSource = data.iconSource,
+			displayIcon = data.displayIcon,
+			groupIcon = data.groupIcon,
+		}
+	end
 	picker.icons = BuildIconList()
 	ShowPicker(L["Icon Picker"])
 end
@@ -2075,6 +2084,7 @@ local function SetFrameLevels()
 		RightPaneNewViewAuraBar = 3,
 		RightPaneNewViewGroup = 3,
 		RightPaneNewViewDynamicGroup = 3,
+		RightPaneNewViewEmpty = 3,
 		RightPaneNewViewModel = 3,
 		RightPaneNewViewProgressTexture = 3,
 		RightPaneNewViewText = 3,

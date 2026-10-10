@@ -12,7 +12,7 @@ version 2 (see `LICENSE`).
 It is derived from [WeakAuras](https://github.com/WeakAuras/WeakAuras2) by
 the WeakAuras Team, also GPLv2. The options window follows the layout of
 WeakAuras' own options window; the aura data model, the region types (icon,
-progress bar, text, texture, progress texture, model, group, dynamic group)
+progress bar, text, texture, progress texture, model, empty, group, dynamic group)
 and their options, the sub-region texts, the conditions, the chat message
 and sound actions, the text placeholders, the texture picker, the aura trigger, the
 weapon enchant, health and power triggers, the spell, item and player info
