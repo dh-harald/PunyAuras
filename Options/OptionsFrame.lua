@@ -7,6 +7,13 @@
 -- AceGUI-3.0, which does not work on Unreal Azeroth, so the widgets here are
 -- plain XML frames.
 --
+-- The look is LibConfig-1.0's, so the window matches the aura options
+-- embedded on its right: flat fills, 1px borders that lighten while hovered,
+-- the picked row and the selected tab in the accent colour. Every colour
+-- comes from PA.optionsTheme, which uses LibConfig-1.0's THEME keys and
+-- values; PA:SetOptionsTheme changes it at run time (for a skin), and every
+-- widget is painted again. The XML colours are only the first frame's.
+--
 -- Unreal Azeroth rules this file follows:
 --   * Hiding a frame does not hide its child frames, so every child frame is
 --     shown and hidden explicitly (UpdatePartsShown).
@@ -28,7 +35,6 @@ local Compat = PunyAuras.Compat
 
 local FRAME_NAME = "PunyAurasOptions"
 local TEXTURES = "Interface\\AddOns\\PunyAuras\\Media\\Textures\\"
-local WHITE = "Interface\\Buttons\\WHITE8X8"
 
 -- Sizes from WeakAuras' options window. The window is not resizable.
 local WIDTH, HEIGHT = 830, 665
@@ -62,17 +68,80 @@ local DISPLAY_HEIGHT = 32
 -- move-up, ungroup and move-down buttons.
 local CHILD_INDENT = 12
 
--- The list row's group buttons. WeakAuras draws "group" with a glue-screen
--- rotation arrow and the others with the money frame's left arrow, rotated;
--- here the money frame's arrows, which the 1.12.1 FrameXML uses itself, and
--- WeakAuras' own move-up/move-down textures, as rotating a texture takes the
--- eight-argument SetTexCoord, which draws skewed on Unreal Azeroth.
-local ROW_BUTTON_TEXTURES = {
-	Group = "Interface\\MoneyFrame\\Arrow-Right-Up",
-	Ungroup = "Interface\\MoneyFrame\\Arrow-Left-Up",
-	Up = TEXTURES .. "PunyAurasMoveUp",
-	Down = TEXTURES .. "PunyAurasMoveDown",
+-- The list row's group buttons, as { glyph, texture coordinates }. Down and
+-- right are the up and left glyphs mirrored by reversed coordinates of the
+-- four-argument SetTexCoord (as LibConfig-1.0 does): rotating takes the
+-- eight-argument form, which draws skewed on Unreal Azeroth.
+local ROW_BUTTON_GLYPHS = {
+	Group = { "PunyAurasArrowLeft", 1, 0, 0, 1 },
+	Ungroup = { "PunyAurasArrowLeft", 0, 1, 0, 1 },
+	Up = { "PunyAurasArrowUp", 0, 1, 0, 1 },
+	Down = { "PunyAurasArrowUp", 0, 1, 1, 0 },
 }
+
+-- The window's colours, by LibConfig-1.0's THEME keys and with its values,
+-- each { r, g, b, a }. Read at paint time: PA:SetOptionsTheme replaces them.
+PA.optionsTheme = {
+	backdrop = { 0.10, 0.10, 0.10, 1 },
+	backdropFade = { 0.06, 0.06, 0.06, 0.80 },
+	border = { 0.31, 0.31, 0.31, 1 },
+	hover = { 0.60, 0.60, 0.60, 1 },
+	accent = { 1, 0.82, 0, 1 },
+	accentFill = { 1, 0.82, 0, 0.22 },
+	text = { 1, 1, 1, 1 },
+	textDim = { 0.60, 0.60, 0.60, 1 },
+}
+local THEME = PA.optionsTheme
+
+local function Color(key)
+	local color = THEME[key]
+	return color[1], color[2], color[3], color[4] or 1
+end
+
+-- Fills a texture with a theme colour (a colour texture, not a backdrop
+-- bgFile: on Unreal Azeroth a backdrop fill renders about twice as light as
+-- on the 1.12.1 client).
+local function SetFill(texture, key)
+	texture:SetTexture(Color(key))
+end
+
+-- A 1px border of four colour textures along the frame's edges, in the
+-- BORDER layer: LibConfig-1.0's CreateBorder, so both sides of the window
+-- draw their borders alike.
+local EDGES = {
+	{ "TOPLEFT", "TOPRIGHT", true },
+	{ "BOTTOMLEFT", "BOTTOMRIGHT", true },
+	{ "TOPLEFT", "BOTTOMLEFT" },
+	{ "TOPRIGHT", "BOTTOMRIGHT" },
+}
+
+local function AddBorder(widget)
+	widget.edges = {}
+	local i
+	for i = 1, Compat.getn(EDGES) do
+		local edge = widget:CreateTexture(nil, "BORDER")
+		edge:SetPoint(EDGES[i][1], widget, EDGES[i][1], 0, 0)
+		edge:SetPoint(EDGES[i][2], widget, EDGES[i][2], 0, 0)
+		if EDGES[i][3] then edge:SetHeight(1) else edge:SetWidth(1) end
+		widget.edges[i] = edge
+	end
+end
+
+local function SetBorderColor(widget, key)
+	local i
+	for i = 1, Compat.getn(widget.edges) do
+		SetFill(widget.edges[i], key)
+	end
+end
+
+-- Paint functions of the widgets whose look does not depend on any state,
+-- run again by PA:SetOptionsTheme. The stateful ones (rows, headers, tabs)
+-- are painted by their own update functions.
+local painters = {}
+local function Themed(paint)
+	table.insert(painters, paint)
+	paint()
+end
 
 -- Width the aura options are laid out to: the right pane (RIGHT_PANE_OFFSET
 -- minus its 17px right margin), less the 10/6px insets of the host frame in
@@ -169,26 +238,6 @@ local function AddPart(widget, content, condition)
 	return widget
 end
 
--- Unreal Azeroth only re-sorts its draw order when a frame is created or
--- reparented. A frame that gets its level, or is shown, after the last such
--- event is drawn at a stale position -- the list rows beneath the window's
--- own translucent background, so they look faded. Reparenting an empty
--- frame, even to the parent it already has, forces the re-sort. It has to
--- run on the next frame: a re-sort in the same frame as the level changes
--- still sees the old order. Harmless on the 1.12.1 client.
-local drawOrderFrame, drawOrderTimer
-local function ResortOnNextFrame()
-	drawOrderTimer:SetScript("OnUpdate", nil)
-	pcall(drawOrderFrame.SetParent, drawOrderFrame, UIParent)
-end
-local function ResortDrawOrder()
-	if not drawOrderFrame then
-		drawOrderFrame = CreateFrame("Frame", nil, UIParent)
-		drawOrderTimer = CreateFrame("Frame", nil, UIParent)
-	end
-	drawOrderTimer:SetScript("OnUpdate", ResortOnNextFrame)
-end
-
 local function UpdatePartsShown()
 	local shown = frame:IsShown()
 	local i
@@ -213,8 +262,6 @@ local function UpdatePartsShown()
 	-- minimized included, so it can be looked at without the window in the
 	-- way.
 	PA:SetPreview(frame:IsShown() and frame.pickedDisplay or nil)
-	-- Last: every view change ends here, after its frames got their levels.
-	ResortDrawOrder()
 end
 
 -- The screen edge or corner the window is closest to, with a small offset
@@ -324,8 +371,32 @@ local function AttachHover(button, hover)
 	button:SetScript("OnLeave", function() hover:Hide() end)
 end
 
+-- LibConfig-1.0's button: a fill and a border, which lightens while the
+-- button is hovered (SetButtonHovered, from the button's own OnEnter and
+-- OnLeave). `labels` are the button's FontStrings with their theme colours,
+-- as { fontString, key } pairs.
+local function StyleButton(button, labels)
+	local fill = _G[button:GetName() .. "Background"]
+	AddBorder(button)
+	button.Paint = function()
+		SetFill(fill, "backdrop")
+		SetBorderColor(button, button.hovered and "hover" or "border")
+		local i
+		for i = 1, Compat.getn(labels or {}) do
+			labels[i][1]:SetTextColor(Color(labels[i][2]))
+		end
+	end
+	Themed(button.Paint)
+end
+
+local function SetButtonHovered(button, hovered)
+	button.hovered = hovered
+	button.Paint()
+end
+
 -- WeakAuras' toolbar button: a 16px icon with the label next to it, as wide
--- as the label plus 24px.
+-- as the label plus 28px, with no fill or border, only WeakAuras' faint
+-- highlight while hovered.
 local function SetupToolbarButton(button, text, texture)
 	local name = button:GetName()
 	_G[name .. "Icon"]:SetTexture(TEXTURES .. texture)
@@ -336,22 +407,68 @@ local function SetupToolbarButton(button, text, texture)
 	if not width or width <= 0 then
 		width = string.len(text) * 7
 	end
-	button:SetWidth(width + 24)
+	button:SetWidth(width + 28)
 
+	Themed(function() label:SetTextColor(Color("text")) end)
 	AttachHover(button, _G[name .. "Hover"])
 end
 
--- WeakAuras' section header ("Loaded/Standby", "Not Loaded"). The expand
--- button keeps its disabled look while the section has no children;
--- otherwise it shows "-" (expanded) or "+" (collapsed) and calls `onToggle`.
+-- An expand button (PunyAurasExpandButtonTemplate): LibConfig-1.0's
+-- sidebar collapse toggle, a small button with the library's fill and
+-- border (lighter while hovered) and its +/- artwork (SetExpandGlyph).
+-- `onEnter` shows the tooltip.
+local function SetupExpandButton(expand, onEnter, onClick)
+	StyleButton(expand)
+	expand:SetScript("OnEnter", function()
+		SetButtonHovered(expand, true)
+		onEnter()
+	end)
+	expand:SetScript("OnLeave", function()
+		SetButtonHovered(expand, false)
+		GameTooltip:Hide()
+	end)
+	expand:SetScript("OnClick", onClick)
+end
+
+-- The +/- glyph of an expand button: "-" while expanded, "+" while
+-- collapsed, a dim "+" while there is nothing to expand. The artwork is
+-- LibConfig-1.0's (GetGlyph); the own white glyphs stand in when the loaded
+-- LibConfig-1.0 is a version without GetGlyph or has no artwork.
+local function SetExpandGlyph(expand, hasChildren, collapsed)
+	local icon = _G[expand:GetName() .. "Icon"]
+	local minus = hasChildren and not collapsed
+	local LC = LibStub("LibConfig-1.0", true)
+	local path, left, right, top, bottom
+	if LC and LC.GetGlyph then
+		path, left, right, top, bottom = LC:GetGlyph(minus and "MINUS" or "PLUS")
+	end
+	if path then
+		icon:SetTexture(path)
+		icon:SetTexCoord(left, right, top, bottom)
+	else
+		icon:SetTexture(TEXTURES .. (minus and "PunyAurasMinus" or "PunyAurasPlus"))
+		icon:SetTexCoord(0, 1, 0, 1)
+	end
+	if hasChildren then
+		icon:SetVertexColor(1, 1, 1, 1)
+	else
+		icon:SetVertexColor(Color("textDim"))
+	end
+end
+
+-- WeakAuras' section header ("Loaded/Standby", "Not Loaded"), drawn as
+-- LibConfig-1.0's section title: accent text over an accent rule, with the
+-- expand button left of the text, as LibConfig-1.0's sidebar rows have it.
+-- The expand button is dim while the section has no children; otherwise it
+-- shows "-" (expanded) or "+" (collapsed) and calls `onToggle`.
 -- `expandDesc`/`collapseDesc` are the button's tooltip lines. UpdateHeader
--- sets the state.
+-- sets the state and the colours.
 local function SetupHeader(button, text, onToggle, expandDesc, collapseDesc)
 	local name = button:GetName()
 	_G[name .. "Text"]:SetText(text)
 
 	local expand = _G[name .. "Expand"]
-	expand:SetScript("OnEnter", function()
+	SetupExpandButton(expand, function()
 		GameTooltip:SetOwner(button, "ANCHOR_NONE")
 		GameTooltip:SetPoint("LEFT", button, "RIGHT", 0, 0)
 		GameTooltip:ClearLines()
@@ -366,9 +483,7 @@ local function SetupHeader(button, text, onToggle, expandDesc, collapseDesc)
 			GameTooltip:AddLine(collapseDesc, 1, 1, 1, 1)
 		end
 		GameTooltip:Show()
-	end)
-	expand:SetScript("OnLeave", function() GameTooltip:Hide() end)
-	expand:SetScript("OnClick", function()
+	end, function()
 		if expand.hasChildren and onToggle then
 			GameTooltip:Hide()
 			onToggle()
@@ -383,23 +498,18 @@ local function SetupHeader(button, text, onToggle, expandDesc, collapseDesc)
 end
 
 local function UpdateHeader(button, hasChildren, collapsed)
-	local expand = _G[button:GetName() .. "Expand"]
+	local name = button:GetName()
+	local expand = _G[name .. "Expand"]
 	expand.hasChildren = hasChildren
 	expand.collapsed = collapsed
-	if not hasChildren then
-		expand:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Disabled")
-	elseif collapsed then
-		expand:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Up")
-	else
-		expand:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
-	end
+	SetExpandGlyph(expand, hasChildren, collapsed)
+	_G[name .. "Text"]:SetTextColor(Color("accent"))
+	SetFill(_G[name .. "Rule"], "accent")
 end
 
--- A search box: a 1px grey frame around a dark fill, "Search" shown while it
--- is empty and unfocused, `onTextChanged(text)` on every edit.
-local function SetupSearchBox(box, placeholder, onTextChanged)
-	placeholder:SetText(L["Search"])
-
+-- A single-line edit box as LibConfig-1.0 draws one: a fill inside a 1px
+-- border.
+local function SetupEditBox(box)
 	-- An addon-created EditBox needs keyboard and mouse enabled explicitly on
 	-- Unreal Azeroth, otherwise only pasting works. The font object is set
 	-- here too, in case the XML <FontString> does not take on this client.
@@ -409,15 +519,20 @@ local function SetupSearchBox(box, placeholder, onTextChanged)
 	pcall(box.EnableKeyboard, box, true)
 	pcall(box.EnableMouse, box, true)
 
-	box:SetBackdrop({
-		edgeFile = WHITE,
-		edgeSize = 1,
-	})
-	box:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
 	local fill = box:CreateTexture(nil, "BACKGROUND")
-	fill:SetTexture(0, 0, 0, 0.5)
-	fill:SetPoint("TOPLEFT", box, "TOPLEFT", 1, -1)
-	fill:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -1, 1)
+	fill:SetAllPoints(box)
+	AddBorder(box)
+	Themed(function()
+		SetFill(fill, "backdrop")
+		SetBorderColor(box, "border")
+	end)
+end
+
+-- A search box: "Search" shown while it is empty and unfocused,
+-- `onTextChanged(text)` on every edit.
+local function SetupSearchBox(box, placeholder, onTextChanged)
+	placeholder:SetText(L["Search"])
+	SetupEditBox(box)
 
 	local function UpdatePlaceholder()
 		if box.hasFocus or (box:GetText() or "") ~= "" then
@@ -451,37 +566,27 @@ local function SetupFilter()
 	end)
 end
 
--- A flat text button with a 1px frame and a hover highlight.
+-- A text button (LibConfig-1.0's button).
 local function SetupPanelButton(button, text, onClick)
-	local name = button:GetName()
-	_G[name .. "Text"]:SetText(text)
-	button:SetBackdrop({
-		edgeFile = WHITE,
-		edgeSize = 1,
-	})
-	button:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
-	AttachHover(button, _G[name .. "Hover"])
+	local label = _G[button:GetName() .. "Text"]
+	label:SetText(text)
+	StyleButton(button, { { label, "text" } })
+	button:SetScript("OnEnter", function() SetButtonHovered(button, true) end)
+	button:SetScript("OnLeave", function() SetButtonHovered(button, false) end)
 	button:SetScript("OnClick", onClick)
 end
 
 -- AceGUI's InlineGroup pane, which WeakAuras uses for the list and for the
--- right-hand views: the tooltip border, and a 0.1 grey fill at half alpha
--- inside it. The fill is a plain colour texture rather than the backdrop's
--- own bgFile: on Unreal Azeroth the backdrop fill (ChatFrameBackground
--- tinted with SetBackdropColor) came out about twice as light as on the
--- 1.12.1 client, while a colour texture renders the same on both.
+-- right-hand views, drawn as LibConfig-1.0's sidebar: a faded fill inside a
+-- 1px border.
 local function SetPaneBackdrop(pane)
-	pane:SetBackdrop({
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		edgeSize = 16,
-		insets = { left = 3, right = 3, top = 5, bottom = 3 },
-	})
-	pane:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
-
 	local fill = pane:CreateTexture(nil, "BACKGROUND")
-	fill:SetTexture(0.1, 0.1, 0.1, 0.5)
-	fill:SetPoint("TOPLEFT", pane, "TOPLEFT", 3, -5)
-	fill:SetPoint("BOTTOMRIGHT", pane, "BOTTOMRIGHT", -3, 3)
+	fill:SetAllPoints(pane)
+	AddBorder(pane)
+	Themed(function()
+		SetFill(fill, "backdropFade")
+		SetBorderColor(pane, "border")
+	end)
 end
 
 local function HasPickedDisplay()
@@ -534,7 +639,7 @@ local function SetRowIndent(row, indent)
 	local name = row:GetName()
 	local icon = _G[name .. "Icon"]
 	icon:ClearAllPoints()
-	icon:SetPoint("LEFT", row, "LEFT", indent, 0)
+	icon:SetPoint("LEFT", row, "LEFT", indent + 1, 0)
 	local title = _G[name .. "Title"]
 	title:ClearAllPoints()
 	title:SetPoint("TOPLEFT", row, "TOPLEFT", 34 + indent, -2)
@@ -545,18 +650,27 @@ local function SetRowIndent(row, indent)
 	box:SetPoint("RIGHT", row, "RIGHT", -4, 0)
 end
 
--- The look of a row while an aura is being grouped (WeakAuras'
--- StartGrouping): rows that cannot be clicked, neither the aura itself nor
--- a group, are dimmed.
-local function UpdateRowGroupingLook(row)
+-- A row's look, as LibConfig-1.0's sidebar row: the picked aura (WeakAuras'
+-- LockHighlight) in the accent colour, a lighter border while hovered.
+-- While an aura is being grouped (WeakAuras' StartGrouping), rows that
+-- cannot be clicked, neither the aura itself nor a group, are dimmed.
+local function PaintRow(row)
 	local name = row:GetName()
+	local picked = row.id ~= nil and row.id == frame.pickedDisplay
 	local dimmed = frame.grouping ~= nil and row.id ~= frame.grouping and not row.isGroup
+	SetFill(_G[name .. "Background"], picked and "accentFill" or "backdrop")
+	if picked then
+		SetBorderColor(row, "accent")
+	else
+		SetBorderColor(row, row.hovered and "hover" or "border")
+	end
+	local title = _G[name .. "Title"]
 	if dimmed then
 		_G[name .. "Icon"]:SetVertexColor(0.4, 0.4, 0.4, 1)
-		_G[name .. "Title"]:SetTextColor(0.5, 0.5, 0.5)
+		title:SetTextColor(Color("textDim"))
 	else
 		_G[name .. "Icon"]:SetVertexColor(1, 1, 1, 1)
-		_G[name .. "Title"]:SetTextColor(1, 0.82, 0)
+		title:SetTextColor(Color(picked and "accent" or "text"))
 	end
 end
 
@@ -566,13 +680,7 @@ local function UpdateRowExpand(row)
 	local data = PA:GetData(row.id)
 	expand.hasChildren = Compat.getn(data.controlledChildren) > 0
 	expand.collapsed = PA.db.global.optionsWindow.collapsedGroups[row.id] and true or false
-	if not expand.hasChildren then
-		expand:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Disabled")
-	elseif expand.collapsed then
-		expand:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Up")
-	else
-		expand:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
-	end
+	SetExpandGlyph(expand, expand.hasChildren, expand.collapsed)
 end
 
 -- The aura list, like WeakAuras' SortDisplayButtons: the "Loaded/Standby"
@@ -650,12 +758,11 @@ local function UpdateList()
 			SetRowIndent(row, row.depth > 0 and CHILD_INDENT or 0)
 			_G[name .. "Icon"]:SetTexture(PA:GetAuraIcon(data))
 			_G[name .. "Title"]:SetText(id)
-			UpdateRowGroupingLook(row)
+			PaintRow(row)
 			UpdateRowExpand(row)
 			row:ClearAllPoints()
 			row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, offset - y)
 			row:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, offset - y)
-			row.UpdateHover()
 			if not collapsed then
 				y = y + DISPLAY_HEIGHT + HEADER_SPACING
 			end
@@ -922,12 +1029,13 @@ local function ShowRowTooltip(row)
 	end
 end
 
--- A small icon button of a row: brighter while hovered (the client's
+-- A small arrow button of a row: brighter while hovered (the client's
 -- highlight textures are drawn permanently on Unreal Azeroth), with
--- WeakAuras' tooltip.
-local function SetupRowIconButton(button, texture, title, text, onClick)
+-- WeakAuras' tooltip. `glyph` is a ROW_BUTTON_GLYPHS entry.
+local function SetupRowIconButton(button, glyph, title, text, onClick)
 	local icon = _G[button:GetName() .. "Icon"]
-	icon:SetTexture(texture)
+	icon:SetTexture(TEXTURES .. glyph[1])
+	icon:SetTexCoord(glyph[2], glyph[3], glyph[4], glyph[5])
 	icon:SetVertexColor(0.8, 0.8, 0.8, 1)
 	button:SetScript("OnEnter", function()
 		icon:SetVertexColor(1, 1, 1, 1)
@@ -981,13 +1089,13 @@ local function SetupRowButtons(row, rowShown)
 	for i = 1, Compat.getn(buttons) do
 		local entry = buttons[i]
 		local button = _G[name .. entry[1]]
-		SetupRowIconButton(button, ROW_BUTTON_TEXTURES[entry[1]], entry[2], entry[3], entry[4])
+		SetupRowIconButton(button, ROW_BUTTON_GLYPHS[entry[1]], entry[2], entry[3], entry[4])
 		button:SetFrameLevel(level)
 		AddPart(button, true, entry[5])
 	end
 
 	local expand = _G[name .. "Expand"]
-	expand:SetScript("OnEnter", function()
+	SetupExpandButton(expand, function()
 		if not expand.hasChildren then
 			ShowTooltip(expand, L["Disabled"], L["Expansion is disabled because this group has no children"])
 		elseif expand.collapsed then
@@ -995,9 +1103,7 @@ local function SetupRowButtons(row, rowShown)
 		else
 			ShowTooltip(expand, L["Collapse"], L["Hide this group's children"])
 		end
-	end)
-	expand:SetScript("OnLeave", function() GameTooltip:Hide() end)
-	expand:SetScript("OnClick", function()
+	end, function()
 		if not (expand.hasChildren and row.id) then return end
 		GameTooltip:Hide()
 		local collapsedGroups = PA.db.global.optionsWindow.collapsedGroups
@@ -1008,42 +1114,30 @@ local function SetupRowButtons(row, rowShown)
 	AddPart(expand, true, function() return rowShown() and row.isGroup and row.renaming == nil end)
 end
 
--- WeakAuras' display button: the aura's icon and name. The picked aura keeps
--- the hover highlight, like WeakAuras' LockHighlight. Right-click opens the
--- menu and picks the aura, as there.
+-- WeakAuras' display button: the aura's icon and name (look: PaintRow).
+-- Right-click opens the menu and picks the aura, as there.
 local function CreateDisplayRow(index)
 	local ok, row = pcall(CreateFrame, "Button", FRAME_NAME .. "Display" .. index,
 		Get("ListScrollContent"), "PunyAurasDisplayButtonTemplate")
 	if not ok or not row then return nil end
 
 	local name = row:GetName()
-	local hover = _G[name .. "Hover"]
-
-	row.UpdateHover = function()
-		if row.hovered or (row.id and row.id == frame.pickedDisplay) then
-			hover:Show()
-		else
-			hover:Hide()
-		end
-	end
+	AddBorder(row)
 	row:SetScript("OnEnter", function()
 		row.hovered = true
-		row.UpdateHover()
+		PaintRow(row)
 		ShowRowTooltip(row)
 	end)
 	row:SetScript("OnLeave", function()
 		row.hovered = nil
-		row.UpdateHover()
+		PaintRow(row)
 		GameTooltip:Hide()
 	end)
 	row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	row:SetScript("OnClick", function() OnRowClick(row) end)
 
-	-- An addon-created EditBox needs keyboard and mouse enabled explicitly on
-	-- Unreal Azeroth.
 	local box = _G[name .. "Rename"]
-	pcall(box.EnableKeyboard, box, true)
-	pcall(box.EnableMouse, box, true)
+	SetupEditBox(box)
 	box:SetScript("OnEnterPressed", function() ApplyRename(row) end)
 	box:SetScript("OnEscapePressed", function() EndRename(row) end)
 
@@ -1131,33 +1225,27 @@ local function SetupList()
 	end, L["Expand all non-loaded displays"], L["Collapse all non-loaded displays"])
 end
 
--- The right pane's tab strip (WeakAuras' TabGroup), drawn with the 1.12.1
--- client's own top-tab art. The selected tab uses the "active" pieces, which
--- sit 3px lower so they join the pane below, and a white label; a hovered
--- tab gets the white label too. The client's own tab hover glow is an ADD
--- blend texture, which Unreal Azeroth does not draw the way the 1.12.1
--- client does.
+-- The right pane's tab strip (WeakAuras' TabGroup), drawn as LibConfig-1.0's
+-- tab strip: the selected tab in the accent colour, the others as its
+-- buttons, with a lighter border while hovered.
 local function UpdateTabs()
 	local key, suffix
 	for key, suffix in pairs(TAB_BUTTONS) do
-		local name = FRAME_NAME .. suffix
+		local tab = Get(suffix)
+		local name = tab:GetName()
 		local selected = (key == frame.selectedTab)
-		for _, piece in ipairs({ "Left", "Middle", "Right" }) do
-			if selected then
-				_G[name .. piece .. "Active"]:Show()
-				_G[name .. piece]:Hide()
-			else
-				_G[name .. piece .. "Active"]:Hide()
-				_G[name .. piece]:Show()
-			end
-		end
-		if selected or Get(suffix).hovered then
-			_G[name .. "Text"]:SetTextColor(1, 1, 1)
+		SetFill(_G[name .. "Background"], selected and "accentFill" or "backdrop")
+		if selected then
+			SetBorderColor(tab, "accent")
 		else
-			_G[name .. "Text"]:SetTextColor(1, 0.82, 0)
+			SetBorderColor(tab, tab.hovered and "hover" or "border")
 		end
+		_G[name .. "Text"]:SetTextColor(Color(selected and "accent" or "text"))
 	end
 end
+
+-- Tab widths as LibConfig-1.0's: the label plus 18px, at least 40px.
+local TAB_PADDING, TAB_MIN_WIDTH = 18, 40
 
 local function SetupTab(key, text)
 	local tab = Get(TAB_BUTTONS[key])
@@ -1167,14 +1255,10 @@ local function SetupTab(key, text)
 
 	local textWidth = label:GetStringWidth()
 	if not textWidth or textWidth <= 0 then
-		textWidth = string.len(text) * 6
+		textWidth = string.len(text) * 7
 	end
-	-- The tab is its 16px end caps plus a middle piece as wide as the label
-	-- and some padding.
-	local middle = textWidth + 8
-	_G[name .. "Middle"]:SetWidth(middle)
-	_G[name .. "MiddleActive"]:SetWidth(middle)
-	tab:SetWidth(middle + 32)
+	tab:SetWidth(math.max(textWidth + TAB_PADDING, TAB_MIN_WIDTH))
+	AddBorder(tab)
 
 	tab:SetScript("OnEnter", function()
 		tab.hovered = true
@@ -1212,6 +1296,7 @@ local function SetupAuraPane()
 	for i = 1, Compat.getn(PA.groupTabs) do
 		SetupTab(PA.groupTabs[i].key, PA.groupTabs[i].text)
 	end
+	UpdateTabs()
 
 	local pane = AddPart(Get("RightPaneTabPane"), true, HasPickedDisplay)
 	SetPaneBackdrop(pane)
@@ -1252,17 +1337,20 @@ SyncAuraOptions = function(reopen)
 	end
 end
 
--- WeakAuras' "New" button: a 40px icon, the title in large yellow and a
--- one-line description under it.
+-- WeakAuras' "New" button, as a LibConfig-1.0 button: the region's icon, the
+-- title in large text and a one-line description under it.
 local function SetupNewButton(button, title, description, icon)
 	local name = button:GetName()
 	_G[name .. "Icon"]:SetTexture(icon)
 	_G[name .. "Title"]:SetText(title)
 	_G[name .. "Description"]:SetText(description)
+	StyleButton(button, {
+		{ _G[name .. "Title"], "text" },
+		{ _G[name .. "Description"], "textDim" },
+	})
 
-	local hover = _G[name .. "Hover"]
 	button:SetScript("OnEnter", function()
-		hover:Show()
+		SetButtonHovered(button, true)
 		GameTooltip:SetOwner(button, "ANCHOR_NONE")
 		GameTooltip:SetPoint("LEFT", button, "RIGHT", 0, 0)
 		GameTooltip:ClearLines()
@@ -1271,7 +1359,7 @@ local function SetupNewButton(button, title, description, icon)
 		GameTooltip:Show()
 	end)
 	button:SetScript("OnLeave", function()
-		hover:Hide()
+		SetButtonHovered(button, false)
 		GameTooltip:Hide()
 	end)
 end
@@ -2201,6 +2289,60 @@ local function SetFrameLevels()
 	end
 end
 
+-- The window itself, as LibConfig-1.0's panel: the fill, a 1px border, and
+-- a title bar in the faded fill with the title in the text colour.
+local function PaintWindow()
+	SetFill(Get("Bg"), "backdrop")
+	SetFill(Get("TitleBg"), "backdropFade")
+	local suffixes = { "TitleLine", "BorderTop", "BorderBottom", "BorderLeft", "BorderRight" }
+	local i
+	for i = 1, Compat.getn(suffixes) do
+		SetFill(Get(suffixes[i]), "border")
+	end
+	Get("TitleText"):SetTextColor(Color("text"))
+end
+
+-- The title bar's glyph buttons (close, minimize): a light grey glyph, a
+-- faint highlight while hovered.
+local function SetupGlyphButton(button, onClick)
+	button:SetScript("OnClick", onClick)
+	AttachHover(button, _G[button:GetName() .. "Hover"])
+	_G[button:GetName() .. "Icon"]:SetVertexColor(0.8, 0.8, 0.8, 1)
+end
+
+-- The window's own parts: its look, moving by the title bar, and the
+-- close and minimize buttons.
+local function SetupWindowChrome()
+	Themed(PaintWindow)
+
+	local titleBar = AddPart(Get("TitleBar"))
+	titleBar:SetScript("OnMouseDown", StartMove)
+	titleBar:SetScript("OnMouseUp", StopMove)
+
+	SetupGlyphButton(AddPart(Get("CloseButton")), function() frame:Hide() end)
+	SetupGlyphButton(AddPart(Get("MinimizeButton")), function() SetMinimized(not frame.minimized) end)
+end
+
+-- Changes the window's colours, e.g. for a skin: `colors` holds any of the
+-- PA.optionsTheme keys, each an { r, g, b[, a] } table; the others are kept.
+-- Every widget is painted again at once.
+function PA:SetOptionsTheme(colors)
+	if type(colors) ~= "table" then return end
+	local key, color
+	for key, color in pairs(colors) do
+		if THEME[key] and type(color) == "table" then
+			THEME[key] = { color[1], color[2], color[3], color[4] or 1 }
+		end
+	end
+	if not frame then return end
+	local i
+	for i = 1, Compat.getn(painters) do
+		painters[i]()
+	end
+	UpdateTabs()
+	if frame:IsShown() then UpdateList() end
+end
+
 function PA:InitializeOptions()
 	frame = Get("")
 	-- First: frames created from here on (the embedded options view, the
@@ -2208,18 +2350,7 @@ function PA:InitializeOptions()
 	SetFrameLevels()
 
 	SetTitle()
-
-	local titleBar = AddPart(Get("TitleBar"))
-	titleBar:SetScript("OnMouseDown", StartMove)
-	titleBar:SetScript("OnMouseUp", StopMove)
-
-	local close = AddPart(Get("CloseButton"))
-	close:SetScript("OnClick", function() frame:Hide() end)
-
-	local minimize = AddPart(Get("MinimizeButton"))
-	minimize:SetScript("OnClick", function() SetMinimized(not frame.minimized) end)
-	AttachHover(minimize, Get("MinimizeButtonHover"))
-	Get("MinimizeButtonIcon"):SetVertexColor(0.8, 0.8, 0.8, 1)
+	SetupWindowChrome()
 
 	AddPart(Get("RightPane"), true)
 	SetupNewView()

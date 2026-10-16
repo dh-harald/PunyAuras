@@ -27,8 +27,6 @@ textures are taken from WeakAuras unchanged:
 |---|---|
 | `Media/Textures/PunyAurasNewAura.tga` | `WeakAuras/Media/Textures/newaura.tga` |
 | `Media/Textures/PunyAurasImport.tga` | `WeakAuras/Media/Textures/importsmall.tga` |
-| `Media/Textures/PunyAurasMoveUp.tga` | `WeakAuras/Media/Textures/moveup.tga` |
-| `Media/Textures/PunyAurasMoveDown.tga` | `WeakAuras/Media/Textures/movedown.tga` |
 
 `Media/Textures/PunyAurasGroup.tga` and `PunyAurasDynamicGroup.tga` redraw
 WeakAuras' default group and dynamic group icons

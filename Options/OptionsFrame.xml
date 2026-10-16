@@ -1,7 +1,7 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
 	<Button name="PunyAurasToolbarButtonTemplate" virtual="true">
 		<Size>
-			<AbsDimension x="16" y="16"/>
+			<AbsDimension x="16" y="20"/>
 		</Size>
 		<Layers>
 			<Layer level="BACKGROUND">
@@ -15,7 +15,11 @@
 						<AbsDimension x="16" y="16"/>
 					</Size>
 					<Anchors>
-						<Anchor point="LEFT"/>
+						<Anchor point="LEFT">
+							<Offset>
+								<AbsDimension x="2" y="0"/>
+							</Offset>
+						</Anchor>
 					</Anchors>
 				</Texture>
 			</Layer>
@@ -24,11 +28,34 @@
 					<Anchors>
 						<Anchor point="LEFT">
 							<Offset>
-								<AbsDimension x="20" y="0"/>
+								<AbsDimension x="22" y="-2"/>
 							</Offset>
 						</Anchor>
 					</Anchors>
 				</FontString>
+			</Layer>
+		</Layers>
+	</Button>
+
+	<Button name="PunyAurasExpandButtonTemplate" virtual="true">
+		<Size>
+			<AbsDimension x="16" y="16"/>
+		</Size>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture name="$parentBackground" setAllPoints="true">
+					<Color r="0.1" g="0.1" b="0.1" a="1"/>
+				</Texture>
+			</Layer>
+			<Layer level="ARTWORK">
+				<Texture name="$parentIcon">
+					<Size>
+						<AbsDimension x="10" y="10"/>
+					</Size>
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+				</Texture>
 			</Layer>
 		</Layers>
 	</Button>
@@ -38,9 +65,16 @@
 			<AbsDimension x="200" y="20"/>
 		</Size>
 		<Layers>
-			<Layer level="BACKGROUND">
-				<Texture name="$parentBackground" setAllPoints="true">
-					<Color r="1" g="1" b="1" a="0.22"/>
+			<Layer level="BORDER">
+				<Texture name="$parentRule">
+					<Size>
+						<AbsDimension x="10" y="1"/>
+					</Size>
+					<Anchors>
+						<Anchor point="BOTTOMLEFT"/>
+						<Anchor point="BOTTOMRIGHT"/>
+					</Anchors>
+					<Color r="1" g="0.82" b="0" a="1"/>
 				</Texture>
 			</Layer>
 			<Layer level="OVERLAY">
@@ -48,7 +82,7 @@
 					<Anchors>
 						<Anchor point="LEFT">
 							<Offset>
-								<AbsDimension x="4" y="0"/>
+								<AbsDimension x="22" y="0"/>
 							</Offset>
 						</Anchor>
 					</Anchors>
@@ -56,14 +90,14 @@
 			</Layer>
 		</Layers>
 		<Frames>
-			<Button name="$parentExpand">
-				<Size>
-					<AbsDimension x="16" y="16"/>
-				</Size>
+			<Button name="$parentExpand" inherits="PunyAurasExpandButtonTemplate">
 				<Anchors>
-					<Anchor point="RIGHT"/>
+					<Anchor point="LEFT">
+						<Offset>
+							<AbsDimension x="2" y="0"/>
+						</Offset>
+					</Anchor>
 				</Anchors>
-				<NormalTexture file="Interface\Buttons\UI-PlusButton-Disabled"/>
 			</Button>
 		</Frames>
 	</Button>
@@ -75,21 +109,20 @@
 		<Layers>
 			<Layer level="BACKGROUND">
 				<Texture name="$parentBackground" setAllPoints="true">
-					<Color r="1" g="1" b="1" a="0.1"/>
-				</Texture>
-			</Layer>
-			<Layer level="ARTWORK">
-				<Texture name="$parentHover" setAllPoints="true" hidden="true">
-					<Color r="1" g="1" b="1" a="0.15"/>
+					<Color r="0.1" g="0.1" b="0.1" a="1"/>
 				</Texture>
 			</Layer>
 			<Layer level="OVERLAY">
 				<Texture name="$parentIcon">
 					<Size>
-						<AbsDimension x="40" y="40"/>
+						<AbsDimension x="38" y="38"/>
 					</Size>
 					<Anchors>
-						<Anchor point="LEFT"/>
+						<Anchor point="LEFT">
+							<Offset>
+								<AbsDimension x="1" y="0"/>
+							</Offset>
+						</Anchor>
 					</Anchors>
 				</Texture>
 				<FontString name="$parentTitle" inherits="GameFontNormalLarge" justifyH="LEFT">
@@ -148,21 +181,20 @@
 		<Layers>
 			<Layer level="BACKGROUND">
 				<Texture name="$parentBackground" setAllPoints="true">
-					<Color r="1" g="1" b="1" a="0.1"/>
-				</Texture>
-			</Layer>
-			<Layer level="ARTWORK">
-				<Texture name="$parentHover" setAllPoints="true" hidden="true">
-					<Color r="1" g="1" b="1" a="0.15"/>
+					<Color r="0.1" g="0.1" b="0.1" a="1"/>
 				</Texture>
 			</Layer>
 			<Layer level="OVERLAY">
 				<Texture name="$parentIcon">
 					<Size>
-						<AbsDimension x="32" y="32"/>
+						<AbsDimension x="30" y="30"/>
 					</Size>
 					<Anchors>
-						<Anchor point="LEFT"/>
+						<Anchor point="LEFT">
+							<Offset>
+								<AbsDimension x="1" y="0"/>
+							</Offset>
+						</Anchor>
 					</Anchors>
 				</Texture>
 				<FontString name="$parentTitle" inherits="GameFontNormal" justifyH="LEFT">
@@ -185,7 +217,7 @@
 			</Layer>
 		</Layers>
 		<Frames>
-			<EditBox name="$parentRename" inherits="InputBoxTemplate" autoFocus="false" letters="64" hidden="true">
+			<EditBox name="$parentRename" autoFocus="false" letters="64" enableMouse="true" hidden="true">
 				<Size>
 					<AbsDimension x="10" y="20"/>
 				</Size>
@@ -201,28 +233,22 @@
 						</Offset>
 					</Anchor>
 				</Anchors>
+				<FontString inherits="GameFontHighlightSmall"/>
 			</EditBox>
-			<Button name="$parentExpand">
-				<Size>
-					<AbsDimension x="16" y="16"/>
-				</Size>
+			<Button name="$parentExpand" inherits="PunyAurasExpandButtonTemplate">
 				<Anchors>
 					<Anchor point="BOTTOMLEFT">
 						<Offset>
-							<AbsDimension x="34" y="0"/>
+							<AbsDimension x="34" y="1"/>
 						</Offset>
 					</Anchor>
 				</Anchors>
-				<NormalTexture file="Interface\Buttons\UI-PlusButton-Disabled"/>
 			</Button>
 			<Button name="$parentGroup" inherits="PunyAurasRowIconButtonTemplate">
-				<Size>
-					<AbsDimension x="16" y="16"/>
-				</Size>
 				<Anchors>
-					<Anchor point="BOTTOMRIGHT">
+					<Anchor point="RIGHT">
 						<Offset>
-							<AbsDimension x="-2" y="0"/>
+							<AbsDimension x="-1" y="0"/>
 						</Offset>
 					</Anchor>
 				</Anchors>
@@ -263,31 +289,18 @@
 		</Size>
 		<Layers>
 			<Layer level="BACKGROUND">
-				<Texture name="$parentBackground">
-					<Anchors>
-						<Anchor point="TOPLEFT">
-							<Offset>
-								<AbsDimension x="1" y="-1"/>
-							</Offset>
-						</Anchor>
-						<Anchor point="BOTTOMRIGHT">
-							<Offset>
-								<AbsDimension x="-1" y="1"/>
-							</Offset>
-						</Anchor>
-					</Anchors>
-					<Color r="0.15" g="0.15" b="0.15" a="0.9"/>
-				</Texture>
-			</Layer>
-			<Layer level="ARTWORK">
-				<Texture name="$parentHover" setAllPoints="true" hidden="true">
-					<Color r="1" g="1" b="1" a="0.15"/>
+				<Texture name="$parentBackground" setAllPoints="true">
+					<Color r="0.1" g="0.1" b="0.1" a="1"/>
 				</Texture>
 			</Layer>
 			<Layer level="OVERLAY">
 				<FontString name="$parentText" inherits="GameFontNormal">
 					<Anchors>
-						<Anchor point="CENTER"/>
+						<Anchor point="CENTER">
+							<Offset>
+								<AbsDimension x="0" y="-2"/>
+							</Offset>
+						</Anchor>
 					</Anchors>
 				</FontString>
 			</Layer>
@@ -318,75 +331,20 @@
 
 	<Button name="PunyAurasTabTemplate" virtual="true">
 		<Size>
-			<AbsDimension x="80" y="24"/>
+			<AbsDimension x="80" y="22"/>
 		</Size>
 		<Layers>
 			<Layer level="BACKGROUND">
-				<Texture name="$parentLeftActive" file="Interface\HelpFrame\HelpFrameTab-Active">
-					<Size>
-						<AbsDimension x="16" y="32"/>
-					</Size>
-					<Anchors>
-						<Anchor point="BOTTOMLEFT">
-							<Offset>
-								<AbsDimension x="0" y="-3"/>
-							</Offset>
-						</Anchor>
-					</Anchors>
-					<TexCoords left="0" right="0.25" top="0" bottom="1.0"/>
-				</Texture>
-				<Texture name="$parentMiddleActive" file="Interface\HelpFrame\HelpFrameTab-Active">
-					<Size>
-						<AbsDimension x="32" y="32"/>
-					</Size>
-					<Anchors>
-						<Anchor point="LEFT" relativeTo="$parentLeftActive" relativePoint="RIGHT"/>
-					</Anchors>
-					<TexCoords left="0.25" right="0.75" top="0" bottom="1.0"/>
-				</Texture>
-				<Texture name="$parentRightActive" file="Interface\HelpFrame\HelpFrameTab-Active">
-					<Size>
-						<AbsDimension x="16" y="32"/>
-					</Size>
-					<Anchors>
-						<Anchor point="LEFT" relativeTo="$parentMiddleActive" relativePoint="RIGHT"/>
-					</Anchors>
-					<TexCoords left="0.75" right="1.0" top="0" bottom="1.0"/>
-				</Texture>
-				<Texture name="$parentLeft" file="Interface\HelpFrame\HelpFrameTab-Inactive">
-					<Size>
-						<AbsDimension x="16" y="32"/>
-					</Size>
-					<Anchors>
-						<Anchor point="BOTTOMLEFT"/>
-					</Anchors>
-					<TexCoords left="0" right="0.25" top="0" bottom="1.0"/>
-				</Texture>
-				<Texture name="$parentMiddle" file="Interface\HelpFrame\HelpFrameTab-Inactive">
-					<Size>
-						<AbsDimension x="32" y="32"/>
-					</Size>
-					<Anchors>
-						<Anchor point="LEFT" relativeTo="$parentLeft" relativePoint="RIGHT"/>
-					</Anchors>
-					<TexCoords left="0.25" right="0.75" top="0" bottom="1.0"/>
-				</Texture>
-				<Texture name="$parentRight" file="Interface\HelpFrame\HelpFrameTab-Inactive">
-					<Size>
-						<AbsDimension x="16" y="32"/>
-					</Size>
-					<Anchors>
-						<Anchor point="LEFT" relativeTo="$parentMiddle" relativePoint="RIGHT"/>
-					</Anchors>
-					<TexCoords left="0.75" right="1.0" top="0" bottom="1.0"/>
+				<Texture name="$parentBackground" setAllPoints="true">
+					<Color r="0.1" g="0.1" b="0.1" a="1"/>
 				</Texture>
 			</Layer>
 			<Layer level="OVERLAY">
-				<FontString name="$parentText" inherits="GameFontNormalSmall">
+				<FontString name="$parentText" inherits="GameFontNormal">
 					<Anchors>
-						<Anchor point="BOTTOM">
+						<Anchor point="CENTER">
 							<Offset>
-								<AbsDimension x="0" y="5"/>
+								<AbsDimension x="0" y="-2"/>
 							</Offset>
 						</Anchor>
 					</Anchors>
@@ -405,7 +363,7 @@
 		<Layers>
 			<Layer level="BACKGROUND">
 				<Texture name="$parentBg" setAllPoints="true">
-					<Color r="0.122" g="0.118" b="0.129" a="0.8"/>
+					<Color r="0.1" g="0.1" b="0.1" a="1"/>
 				</Texture>
 			</Layer>
 			<Layer level="BORDER">
@@ -505,14 +463,27 @@
 				</Anchors>
 			</Button>
 
-			<Button name="$parentCloseButton" inherits="UIPanelCloseButton">
+			<Button name="$parentCloseButton">
+				<Size>
+					<AbsDimension x="18" y="18"/>
+				</Size>
 				<Anchors>
 					<Anchor point="TOPRIGHT">
 						<Offset>
-							<AbsDimension x="5" y="5"/>
+							<AbsDimension x="-2" y="-2"/>
 						</Offset>
 					</Anchor>
 				</Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<Texture name="$parentHover" setAllPoints="true" hidden="true">
+							<Color r="1" g="1" b="1" a="0.1"/>
+						</Texture>
+					</Layer>
+					<Layer level="ARTWORK">
+						<Texture name="$parentIcon" file="Interface\AddOns\PunyAuras\Media\Textures\PunyAurasClose" setAllPoints="true"/>
+					</Layer>
+				</Layers>
 			</Button>
 
 			<Button name="$parentMinimizeButton">
@@ -522,7 +493,7 @@
 				<Anchors>
 					<Anchor point="RIGHT" relativeTo="$parentCloseButton" relativePoint="LEFT">
 						<Offset>
-							<AbsDimension x="6" y="0"/>
+							<AbsDimension x="-2" y="0"/>
 						</Offset>
 					</Anchor>
 				</Anchors>
@@ -565,36 +536,52 @@
 								<Anchors>
 									<Anchor point="BOTTOMLEFT">
 										<Offset>
-											<AbsDimension x="6" y="0"/>
+											<AbsDimension x="0" y="2"/>
 										</Offset>
 									</Anchor>
 								</Anchors>
 							</Button>
 							<Button name="$parentTrigger" inherits="PunyAurasTabTemplate">
 								<Anchors>
-									<Anchor point="LEFT" relativeTo="$parentRegion" relativePoint="RIGHT"/>
+									<Anchor point="LEFT" relativeTo="$parentRegion" relativePoint="RIGHT">
+										<Offset>
+											<AbsDimension x="4" y="0"/>
+										</Offset>
+									</Anchor>
 								</Anchors>
 							</Button>
 							<Button name="$parentConditions" inherits="PunyAurasTabTemplate">
 								<Anchors>
-									<Anchor point="LEFT" relativeTo="$parentTrigger" relativePoint="RIGHT"/>
+									<Anchor point="LEFT" relativeTo="$parentTrigger" relativePoint="RIGHT">
+										<Offset>
+											<AbsDimension x="4" y="0"/>
+										</Offset>
+									</Anchor>
 								</Anchors>
 							</Button>
 							<Button name="$parentActions" inherits="PunyAurasTabTemplate">
 								<Anchors>
-									<Anchor point="LEFT" relativeTo="$parentConditions" relativePoint="RIGHT"/>
+									<Anchor point="LEFT" relativeTo="$parentConditions" relativePoint="RIGHT">
+										<Offset>
+											<AbsDimension x="4" y="0"/>
+										</Offset>
+									</Anchor>
 								</Anchors>
 							</Button>
 							<Button name="$parentLoad" inherits="PunyAurasTabTemplate">
 								<Anchors>
-									<Anchor point="LEFT" relativeTo="$parentActions" relativePoint="RIGHT"/>
+									<Anchor point="LEFT" relativeTo="$parentActions" relativePoint="RIGHT">
+										<Offset>
+											<AbsDimension x="4" y="0"/>
+										</Offset>
+									</Anchor>
 								</Anchors>
 							</Button>
 							<Button name="$parentGroup" inherits="PunyAurasTabTemplate">
 								<Anchors>
 									<Anchor point="BOTTOMLEFT">
 										<Offset>
-											<AbsDimension x="6" y="0"/>
+											<AbsDimension x="0" y="2"/>
 										</Offset>
 									</Anchor>
 								</Anchors>
