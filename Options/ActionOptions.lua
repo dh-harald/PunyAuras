@@ -2,9 +2,9 @@
 -- and "On Hide", each a chat message (Core/Actions.lua) -- its type, its
 -- text with the text placeholders, a whisper's target and a colour for the
 -- chat frame and the error frame -- and a sound (Core/Sounds.lua): a
--- LibSharedMedia sound or a typed file path; "On Show" can repeat it. WeakAuras' sound channel, "Sound by
--- Kit ID", "Stop Sound", glow and custom code actions are not part of this
--- addon.
+-- LibSharedMedia sound or a typed file path, and its channel; "On Show" can
+-- repeat it. WeakAuras' "Sound by Kit ID", "Stop Sound", glow and custom
+-- code actions are not part of this addon.
 
 local PA, L = unpack(PunyAuras)
 
@@ -77,10 +77,12 @@ end
 
 -- The sound file rows of the sound `options` describe (an action's, or a
 -- condition's "sound" change value) into `args`, keyed `prefix` .. field,
--- ordered from `order` on: the sound, and the file path for "Custom". A
--- sound picked or a path typed plays at once, as in WeakAuras; the list's
--- rows have a play button of their own (LibConfig's LSM30_Sound). `hidden`
--- hides both (a condition's "Stop"), `disabled` greys them out.
+-- ordered from `order` on: the sound, its channel, and the file path for
+-- "Custom". A sound picked or a path typed plays at once on the chosen
+-- channel, as in WeakAuras; the list's rows have a play button of their
+-- own (LibConfig's LSM30_Sound, always on "Master"). The channel shows
+-- PA.DEFAULT_SOUND_CHANNEL while none is stored. `hidden` hides all of
+-- them (a condition's "Stop"), `disabled` greys them out.
 function PA:AddSoundFileArgs(args, options, prefix, order, onChange, disabled, hidden)
 	args[prefix .. "sound"] = {
 		type = "select",
@@ -94,7 +96,20 @@ function PA:AddSoundFileArgs(args, options, prefix, order, onChange, disabled, h
 		set = function(info, value)
 			options.sound = value
 			if onChange then onChange() end
-			PA:PlaySoundPath(value)
+			PA:PlaySoundPath(value, PA:SoundChannel(options))
+		end,
+	}
+	args[prefix .. "sound_channel"] = {
+		type = "select",
+		name = L["Sound Channel"],
+		order = order + 0.05,
+		values = PA.soundChannels,
+		disabled = disabled,
+		hidden = hidden,
+		get = function() return PA:SoundChannel(options) end,
+		set = function(info, value)
+			options.sound_channel = value
+			if onChange then onChange() end
 		end,
 	}
 	args[prefix .. "sound_path"] = {
@@ -112,7 +127,7 @@ function PA:AddSoundFileArgs(args, options, prefix, order, onChange, disabled, h
 		set = function(info, value)
 			options.sound_path = value
 			if onChange then onChange() end
-			PA:PlaySoundPath(value)
+			PA:PlaySoundPath(value, PA:SoundChannel(options))
 		end,
 	}
 end

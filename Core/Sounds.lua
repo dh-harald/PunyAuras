@@ -8,7 +8,7 @@
 -- option stores a path, as WeakAuras does: `sound` is a LibSharedMedia
 -- sound's path, or CUSTOM with the path typed into `sound_path`.
 --
--- Playing is PlaySoundFile(path, "Master") on both clients, with the path
+-- Playing is PlaySoundFile(path, channel) on both clients, with the path
 -- LibSharedMedia hands out: a stored path is looked up among the registered
 -- sounds and played as LSM:Fetch gives it, a path of no registered sound
 -- (one typed in) through LSM:GetClientSoundPath. Unreal Azeroth plays an
@@ -17,10 +17,15 @@
 -- the standard "Interface\AddOns\..." form on both clients. Unreal Azeroth
 -- plays Ogg Vorbis and WAV, not MP3.
 --
--- Not ported: the sound channel (always "Master"), "Sound by Kit ID", and
--- "Stop Sound" with its fade-out -- neither client can stop a sound once it
--- plays. "Loop" plays the sound again every `sound_repeat` seconds until the
--- aura hides or another sound of the aura starts; a condition's "Stop" ends
+-- The channel is the option's `sound_channel` (WeakAuras' field), a key of
+-- PA.soundChannels; a sound option without one -- or with one not listed
+-- there, such as WeakAuras' "Dialog" -- plays on PA.DEFAULT_SOUND_CHANNEL,
+-- "Master" as in WeakAuras. The stored value stays as it is.
+--
+-- Not ported: "Sound by Kit ID", and "Stop Sound" with its fade-out --
+-- neither client can stop a sound once it plays. "Loop" plays the sound
+-- again every `sound_repeat` seconds until the aura hides or another
+-- sound of the aura starts; a condition's "Stop" ends
 -- the repetition, the sound playing at the moment runs to its end. One
 -- repetition per aura, as WeakAuras keeps one per region.
 --
@@ -32,6 +37,16 @@
 local PA, L = unpack(PunyAuras)
 
 PA.CUSTOM_SOUND = " custom"
+
+-- WeakAuras' sound_channel_types without "Dialog", a channel the 1.12.1
+-- sound options do not have.
+PA.soundChannels = {
+	Master = L["Master"],
+	SFX = L["Sound Effects"],
+	Ambience = L["Ambience"],
+	Music = L["Music"],
+}
+PA.DEFAULT_SOUND_CHANNEL = "Master"
 
 local SOUND_FOLDER = "Interface\\AddOns\\PunyAuras\\Media\\Sounds\\"
 local LOGIN_SQUELCH = 10
@@ -178,11 +193,18 @@ local function ClientPath(path)
 	return path
 end
 
--- Plays the sound file `path` at once (the options' preview, and every
--- sound an aura plays).
-function PA:PlaySoundPath(path)
+-- The channel the sound options `options` play on (see the header).
+function PA:SoundChannel(options)
+	local channel = type(options) == "table" and options.sound_channel
+	if channel and self.soundChannels[channel] then return channel end
+	return self.DEFAULT_SOUND_CHANNEL
+end
+
+-- Plays the sound file `path` at once on `channel` (the options' preview,
+-- and every sound an aura plays); no channel is DEFAULT_SOUND_CHANNEL.
+function PA:PlaySoundPath(path, channel)
 	if type(path) ~= "string" or path == "" or path == self.CUSTOM_SOUND then return end
-	pcall(PlaySoundFile, ClientPath(path), "Master")
+	pcall(PlaySoundFile, ClientPath(path), channel or self.DEFAULT_SOUND_CHANNEL)
 end
 
 -- The file the sound options `options` choose.
@@ -206,7 +228,7 @@ end
 local function PlayOnce(options)
 	if options.sound_type == "Stop" then return end
 	if OptionsOpen() or GetTime() < squelchUntil then return end
-	PA:PlaySoundPath(SoundPath(options))
+	PA:PlaySoundPath(SoundPath(options), PA:SoundChannel(options))
 end
 
 -- Plays the repetitions that are due; one whose aura is no longer active
