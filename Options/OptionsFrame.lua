@@ -174,8 +174,9 @@ local auraOptions
 -- Pooled list rows, one per aura, in list order.
 local displayRows = {}
 -- The list's scrolling: `offset` (pixels from the top), `maxOffset`, and
--- `scrollBar`, LibConfig-1.0's scrollbar control.
-local listState = { offset = 0, maxOffset = 0 }
+-- `scrollBar`, LibConfig-1.0's scrollbar control; `filter`, the search
+-- box's text.
+local listState = { offset = 0, maxOffset = 0, filter = "" }
 
 -- Whether a list entry at `top` (pixels from the list's top), `height` tall,
 -- is at least partly inside the scrolled view.
@@ -560,12 +561,6 @@ local function SetupSearchBox(box, placeholder, onTextChanged)
 	UpdatePlaceholder()
 end
 
-local function SetupFilter()
-	SetupSearchBox(Get("Filter"), Get("FilterPlaceholder"), function(text)
-		PA.optionsFilter = text
-	end)
-end
-
 -- A text button (LibConfig-1.0's button).
 local function SetupPanelButton(button, text, onClick)
 	local label = _G[button:GetName() .. "Text"]
@@ -610,21 +605,71 @@ local function IsListedLoaded(data, env)
 	return false
 end
 
+-- The words of a search text, as WeakAuras' splitAtOr splits it: lower
+-- case, separated by "|" or " or ", empty words dropped.
+local function FilterWords(text)
+	local words = {}
+	local rest = string.lower(text or "")
+	while true do
+		local bar = string.find(rest, "|", 1, true)
+		local orStart, orEnd = string.find(rest, " or ", 1, true)
+		local sepStart, sepEnd = bar, bar
+		if orStart and (not bar or orStart < bar) then
+			sepStart, sepEnd = orStart, orEnd
+		end
+		local word = sepStart and string.sub(rest, 1, sepStart - 1) or rest
+		if word ~= "" then table.insert(words, word) end
+		if not sepStart then break end
+		rest = string.sub(rest, sepEnd + 1)
+	end
+	return words
+end
+
+-- The ids the list shows for the search box's text, as WeakAuras'
+-- SortDisplayButtons filters: an aura whose name contains any word, and its
+-- group. nil while the text is empty (everything is shown).
+local function FilterMatches(ids)
+	local words = FilterWords(listState.filter)
+	if Compat.getn(words) == 0 then return nil end
+	local matches = {}
+	local i, w
+	for i = 1, Compat.getn(ids) do
+		local id = ids[i]
+		local name = string.lower(id)
+		for w = 1, Compat.getn(words) do
+			if string.find(name, words[w], 1, true) then
+				matches[id] = true
+				local parent = PA:GetData(id).parent
+				if parent then matches[parent] = true end
+				break
+			end
+		end
+	end
+	return matches
+end
+
 -- The entries of a list section, as { id, depth } in list order: its
 -- top-level auras and groups by name, each expanded group followed by its
--- children in the group's order.
-local function SectionEntries(topIds)
+-- children in the group's order. With `matches` (FilterMatches) only the
+-- matching ones are listed; a group listed for a matching child shows only
+-- its matching children, as in WeakAuras.
+local function SectionEntries(topIds, matches)
 	local collapsedGroups = PA.db.global.optionsWindow.collapsedGroups
 	local entries = {}
 	local i
 	for i = 1, Compat.getn(topIds) do
 		local id = topIds[i]
-		table.insert(entries, { id = id, depth = 0 })
-		local data = PA:GetData(id)
-		if PA:IsGroup(data) and not collapsedGroups[id] then
-			local c
-			for c = 1, Compat.getn(data.controlledChildren) do
-				table.insert(entries, { id = data.controlledChildren[c], depth = 1 })
+		if not matches or matches[id] then
+			table.insert(entries, { id = id, depth = 0 })
+			local data = PA:GetData(id)
+			if PA:IsGroup(data) and not collapsedGroups[id] then
+				local c
+				for c = 1, Compat.getn(data.controlledChildren) do
+					local childId = data.controlledChildren[c]
+					if not matches or matches[childId] then
+						table.insert(entries, { id = childId, depth = 1 })
+					end
+				end
 			end
 		end
 	end
@@ -707,8 +752,9 @@ local function UpdateList()
 			end
 		end
 	end
-	local loadedEntries = SectionEntries(loadedIds)
-	local unloadedEntries = SectionEntries(unloadedIds)
+	local matches = FilterMatches(ids)
+	local loadedEntries = SectionEntries(loadedIds, matches)
+	local unloadedEntries = SectionEntries(unloadedIds, matches)
 	local order = {}
 	for i = 1, Compat.getn(loadedEntries) do table.insert(order, loadedEntries[i].id) end
 	for i = 1, Compat.getn(unloadedEntries) do table.insert(order, unloadedEntries[i].id) end
@@ -790,9 +836,19 @@ local function UpdateList()
 		return
 	end
 
-	UpdateHeader(Get("ListScrollContentLoaded"), Compat.getn(loadedEntries) > 0, loadedCollapsed)
-	UpdateHeader(Get("ListScrollContentUnloaded"), Compat.getn(unloadedEntries) > 0, unloadedCollapsed)
+	-- The headers' expand buttons go by the sections' auras, not by what the
+	-- filter leaves of them.
+	UpdateHeader(Get("ListScrollContentLoaded"), Compat.getn(loadedIds) > 0, loadedCollapsed)
+	UpdateHeader(Get("ListScrollContentUnloaded"), Compat.getn(unloadedIds) > 0, unloadedCollapsed)
 	UpdatePartsShown()
+end
+
+local function SetupFilter()
+	SetupSearchBox(Get("Filter"), Get("FilterPlaceholder"), function(text)
+		if text == listState.filter then return end
+		listState.filter = text
+		UpdateList()
+	end)
 end
 
 -- Scrolls the list to `offset` pixels from its top (within its range).
