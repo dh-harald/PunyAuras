@@ -1,3 +1,13 @@
+## [0.2.1](https://github.com/dh-harald/PunyAuras/compare/v0.2.0...v0.2.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* graphical changes to make the design mode consistent ([d8431a6](https://github.com/dh-harald/PunyAuras/commit/d8431a6dea0c83e667341ad71e406722b18b9be8))
+* implement search ([8d9b4b4](https://github.com/dh-harald/PunyAuras/commit/8d9b4b43fb38c0cf5eca3a7aff9371f87554b56f))
+* **sound:** add channel for sounds ([6e7c038](https://github.com/dh-harald/PunyAuras/commit/6e7c038c3a1eedd2a1a3dc9e36f7ed0a06c2b599))
+* **UI:** fixed new aura/import position after patch ([43c7a22](https://github.com/dh-harald/PunyAuras/commit/43c7a2235b1b65246fb49ac7af89789adaede1c6))
+
 # [0.2.0](https://github.com/dh-harald/PunyAuras/compare/v0.1.1...v0.2.0) (2026-10-10)
 
 
